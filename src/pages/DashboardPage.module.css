@@ -25,6 +25,42 @@
   color: rgba(234, 240, 255, 0.75);
 }
 
+.userMeta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: rgba(234, 240, 255, 0.85);
+}
+
+.nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.navLink {
+  font-size: 13px;
+  color: rgba(234, 240, 255, 0.85);
+  text-decoration: none;
+}
+
+.navButton {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: rgba(234, 240, 255, 0.85);
+  cursor: pointer;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+.navButton:hover {
+  text-decoration: underline;
+}
+
 .main {
   display: grid;
   grid-template-columns: 1fr 320px;
