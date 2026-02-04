@@ -1,15 +1,13 @@
 import { useMemo, useState } from 'react'
 
 import type { Task, TaskPriority } from '../../types/task'
-import { TASK_PRIORITY_LABEL } from '../../types/task'
+import { TASK_PRIORITY_LABEL, TASK_PRIORITY_ORDER } from '../../types/task'
 import styles from './PrioritySelector.module.css'
 
 type PrioritySelectorProps = {
   tasks: Task[]
   onUpdateTask: (task: Task) => void
 }
-
-const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'critical']
 
 export function PrioritySelector({ tasks, onUpdateTask }: PrioritySelectorProps) {
   const [selectedTaskId, setSelectedTaskId] = useState(tasks[0]?.id ?? '')
@@ -53,7 +51,7 @@ export function PrioritySelector({ tasks, onUpdateTask }: PrioritySelectorProps)
             onUpdateTask({ ...selectedTask, priority: e.target.value as TaskPriority })
           }}
         >
-          {PRIORITIES.map((priority) => (
+          {TASK_PRIORITY_ORDER.map((priority) => (
             <option key={priority} value={priority}>
               {TASK_PRIORITY_LABEL[priority]}
             </option>

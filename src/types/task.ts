@@ -17,9 +17,13 @@ export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
   done: 'Done',
 }
 
+export const TASK_STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
+
 export const TASK_PRIORITY_LABEL: Record<TaskPriority, string> = {
   low: 'Low',
   medium: 'Medium',
   high: 'High',
   critical: 'Critical',
 }
+
+export const TASK_PRIORITY_ORDER: TaskPriority[] = ['low', 'medium', 'high', 'critical']

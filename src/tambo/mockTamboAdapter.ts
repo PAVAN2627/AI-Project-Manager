@@ -1,7 +1,8 @@
 import type { UIPlan } from './types'
 
 function includesAny(haystack: string, needles: string[]) {
-  return needles.some((n) => haystack.includes(n))
+  const lowerHaystack = haystack.toLowerCase()
+  return needles.some((n) => lowerHaystack.includes(n.toLowerCase()))
 }
 
 /**

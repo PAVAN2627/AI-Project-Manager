@@ -15,11 +15,12 @@ export function App() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [prompt, setPrompt] = useState('')
 
-  const { plan, isPlanning } = useGenerativeUI()
-  const [activePlan, setActivePlan] = useState<UIPlan | null>(null)
+  const { plan, isPlanning, defaultPlan } = useGenerativeUI()
+  const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
+  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false)
 
   const visibleTasks = useMemo(() => {
-    if (!activePlan?.kanban?.enabled) return tasks
+    if (!activePlan.kanban.enabled) return tasks
     if (activePlan.kanban.filterStatus) {
       return tasks.filter((t) => t.status === activePlan.kanban.filterStatus)
     }
@@ -41,12 +42,13 @@ export function App() {
           onSubmit={async () => {
             const nextPlan = await plan(prompt)
             setActivePlan(nextPlan)
+            setHasGeneratedPlan(true)
           }}
         />
       </header>
 
       <main className={styles.main}>
-        {activePlan?.kanban?.enabled ? (
+        {activePlan.kanban.enabled ? (
           <KanbanBoard tasks={visibleTasks} />
         ) : (
           <div className={styles.placeholder}>
@@ -58,7 +60,7 @@ export function App() {
         )}
 
         <section className={styles.sidePanel}>
-          {activePlan?.prioritySelector?.enabled ? (
+          {activePlan.prioritySelector.enabled ? (
             <PrioritySelector
               tasks={tasks}
               onUpdateTask={(updated) => {
@@ -67,7 +69,7 @@ export function App() {
             />
           ) : null}
 
-          {activePlan?.teamAssignment?.enabled ? (
+          {activePlan.teamAssignment.enabled ? (
             <TeamAssignmentPanel
               tasks={tasks}
               users={mockUsers}
@@ -77,7 +79,7 @@ export function App() {
             />
           ) : null}
 
-          {activePlan ? (
+          {hasGeneratedPlan ? (
             <details className={styles.planDetails}>
               <summary>UI plan (mock Tambo)</summary>
               <pre className={styles.planJson}>{JSON.stringify(activePlan, null, 2)}</pre>

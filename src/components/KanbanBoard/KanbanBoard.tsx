@@ -1,17 +1,15 @@
-import type { Task, TaskStatus } from '../../types/task'
-import { TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from '../../types/task'
+import type { Task } from '../../types/task'
+import { TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER } from '../../types/task'
 import styles from './KanbanBoard.module.css'
 
 type KanbanBoardProps = {
   tasks: Task[]
 }
 
-const STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
-
 export function KanbanBoard({ tasks }: KanbanBoardProps) {
   return (
     <section className={styles.board} aria-label='Kanban board'>
-      {STATUS_ORDER.map((status) => {
+      {TASK_STATUS_ORDER.map((status) => {
         const columnTasks = tasks.filter((t) => t.status === status)
 
         return (
