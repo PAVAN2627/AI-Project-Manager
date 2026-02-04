@@ -22,6 +22,7 @@ export function NewTaskForm({ isBusy, error, onCreateTask }: NewTaskFormProps) {
         className={styles.form}
         onSubmit={(e) => {
           e.preventDefault()
+          if (isBusy) return
           const trimmed = title.trim()
           if (!trimmed) return
           onCreateTask(trimmed)
@@ -31,6 +32,7 @@ export function NewTaskForm({ isBusy, error, onCreateTask }: NewTaskFormProps) {
         <label className={styles.label}>
           Title
           <input
+            type='text'
             className={styles.input}
             value={title}
             placeholder='e.g. Review PR #6'

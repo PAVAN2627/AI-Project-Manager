@@ -15,6 +15,7 @@ function getSessionToken(req) {
     if (match?.[1]) return match[1].trim()
   }
 
+  // Convenience for non-browser clients (e.g. curl) when setting an Authorization header is annoying.
   const tokenHeader = req.header('x-session-token')
   if (typeof tokenHeader === 'string' && tokenHeader.trim() !== '') {
     return tokenHeader.trim()
@@ -31,7 +32,7 @@ function requireSession(req, res, next) {
     return
   }
 
-  req.session = session
+  res.locals.ownerEmail = session.email
   next()
 }
 
@@ -66,7 +67,7 @@ function normalizeAssigneeId(value) {
 }
 
 tasksRouter.get('/tasks', requireSession, async (req, res) => {
-  const tasks = await listTasksForOwner({ ownerEmail: req.session.email })
+  const tasks = await listTasksForOwner({ ownerEmail: res.locals.ownerEmail })
   res.json({ ok: true, tasks })
 })
 
@@ -94,12 +95,12 @@ tasksRouter.post('/tasks', requireSession, async (req, res) => {
   const assigneeInput = req.body?.assigneeId ?? req.body?.assignedTo
   const assigneeId = normalizeAssigneeId(assigneeInput)
   if (assigneeId === null) {
-    res.status(400).json({ error: "Invalid 'assignedTo'" })
+    res.status(400).json({ error: "Invalid 'assigneeId'" })
     return
   }
 
   const task = await createTaskForOwner({
-    ownerEmail: req.session.email,
+    ownerEmail: res.locals.ownerEmail,
     title,
     status,
     priority,
@@ -132,15 +133,17 @@ tasksRouter.put('/tasks/:id', requireSession, async (req, res) => {
   const assigneeId =
     assigneeInput === undefined ? undefined : normalizeAssigneeId(assigneeInput)
   if (assigneeId === null) {
-    res.status(400).json({ error: "Invalid 'assignedTo'" })
+    res.status(400).json({ error: "Invalid 'assigneeId'" })
     return
   }
 
-  const patch = {
-    ...(status !== undefined ? { status } : null),
-    ...(priority !== undefined ? { priority } : null),
-    ...(assigneeInput !== undefined ? { assigneeId } : null),
-  }
+  const patch = {}
+  if (status !== undefined) patch.status = status
+  if (priority !== undefined) patch.priority = priority
+
+  // `assigneeId` supports clearing by sending an empty string (normalized to `undefined`).
+  // We intentionally gate on the raw input so the client can clear the assignee.
+  if (assigneeInput !== undefined) patch.assigneeId = assigneeId
 
   if (Object.keys(patch).length === 0) {
     res.status(400).json({ error: 'No updates provided' })
@@ -148,7 +151,7 @@ tasksRouter.put('/tasks/:id', requireSession, async (req, res) => {
   }
 
   const task = await updateTaskForOwner({
-    ownerEmail: req.session.email,
+    ownerEmail: res.locals.ownerEmail,
     id,
     patch,
   })

@@ -78,20 +78,41 @@ export function DashboardPage() {
   function handleUpdateTask(nextTask: Task) {
     if (!session) return
 
+    const previousTask = tasks.find((t) => t.id === nextTask.id) ?? null
+
+    const localPatch: Partial<Task> = {}
+    const apiPatch: { status?: Task['status']; priority?: Task['priority']; assigneeId?: string } = {}
+
+    if (!previousTask || previousTask.status !== nextTask.status) {
+      localPatch.status = nextTask.status
+      apiPatch.status = nextTask.status
+    }
+
+    if (!previousTask || previousTask.priority !== nextTask.priority) {
+      localPatch.priority = nextTask.priority
+      apiPatch.priority = nextTask.priority
+    }
+
+    if (!previousTask || previousTask.assigneeId !== nextTask.assigneeId) {
+      localPatch.assigneeId = nextTask.assigneeId
+      apiPatch.assigneeId = nextTask.assigneeId ?? ''
+    }
+
+    if (Object.keys(apiPatch).length === 0) return
+
     setTaskError(null)
-    setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? nextTask : t)))
+    setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? { ...t, ...localPatch } : t)))
 
     setIsTasksBusy(true)
-    void updateTask(session, nextTask.id, {
-      status: nextTask.status,
-      priority: nextTask.priority,
-      assigneeId: nextTask.assigneeId ?? '',
-    })
+    void updateTask(session, nextTask.id, apiPatch)
       .then((saved) => {
         setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))
       })
       .catch((error) => {
         setTaskError(error instanceof Error ? error.message : 'Failed to update task')
+        if (previousTask) {
+          setTasks((prev) => prev.map((t) => (t.id === previousTask.id ? previousTask : t)))
+        }
       })
       .finally(() => {
         setIsTasksBusy(false)
@@ -136,7 +157,11 @@ export function DashboardPage() {
       </header>
 
       <main className={styles.main}>
-        {activePlan.kanban.enabled ? (
+        {isLoadingTasks ? (
+          <div className={styles.placeholder}>
+            <p>Loading tasks…</p>
+          </div>
+        ) : activePlan.kanban.enabled ? (
           <KanbanBoard tasks={visibleTasks} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>

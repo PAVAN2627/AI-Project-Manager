@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { MockTamboAdapter } from './mockTamboAdapter'
 import type { GenerativeUIAdapter, UIPlan } from './types'
 
+// Default plan shows the Kanban board immediately; other panels are opt-in.
 const DEFAULT_PLAN: UIPlan = {
   kanban: { enabled: true },
   prioritySelector: { enabled: false },

@@ -18,7 +18,10 @@ function withWriteLock(fn) {
   // Keep the chain alive even if a write fails.
   writeLock = next.then(
     () => undefined,
-    () => undefined,
+    (error) => {
+      console.error('Task store write failed:', error)
+      return undefined
+    },
   )
   return next
 }
@@ -42,7 +45,11 @@ async function readTasks() {
     const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed : []
   } catch {
-    console.warn(`Failed to parse tasks JSON at ${tasksFilePath}; treating as empty list`)
+    const backupPath = `${tasksFilePath}.${Date.now()}.bak`
+    await fs.writeFile(backupPath, raw, 'utf8').catch(() => undefined)
+    console.warn(
+      `Failed to parse tasks JSON at ${tasksFilePath}; backed up to ${backupPath} and treating as empty list`,
+    )
     return []
   }
 }

@@ -31,6 +31,7 @@ export function KanbanBoard({ tasks, onUpdateTask }: KanbanBoardProps) {
                       <select
                         className={styles.statusSelect}
                         value={task.status}
+                        aria-label={`Change status for ${task.title}`}
                         onChange={(e) => {
                           onUpdateTask({ ...task, status: e.target.value as TaskStatus })
                         }}
