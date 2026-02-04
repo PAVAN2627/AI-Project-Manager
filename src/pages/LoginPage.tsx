@@ -7,7 +7,6 @@ import styles from './AuthPage.module.css'
 export function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
 
   return (
     <div className={styles.page}>
@@ -17,7 +16,10 @@ export function LoginPage() {
           className={styles.form}
           onSubmit={(e) => {
             e.preventDefault()
-            setHackathonUser({ email })
+            const trimmedEmail = email.trim()
+            if (!trimmedEmail) return
+
+            setHackathonUser({ email: trimmedEmail })
             navigate('/dashboard')
           }}
         >
@@ -36,22 +38,6 @@ export function LoginPage() {
             />
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              className={styles.input}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
           <div className={styles.actions}>
             <button className={styles.button} type="submit">
               Continue
@@ -63,7 +49,7 @@ export function LoginPage() {
         </form>
 
         <p className={styles.helper}>
-          Hackathon-only flow: this form doesn’t validate credentials.
+          Hackathon-only flow: enter any email to continue.
         </p>
       </div>
     </div>

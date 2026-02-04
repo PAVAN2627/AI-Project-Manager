@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { KanbanBoard } from '../components/KanbanBoard/KanbanBoard'
 import { PrioritySelector } from '../components/PrioritySelector/PrioritySelector'
@@ -7,16 +7,17 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockTasks } from '../data/mockTasks'
 import { mockUsers } from '../data/mockUsers'
-import { getHackathonUser } from '../app/hackathonAuth'
+import { clearHackathonUser, getHackathonUser } from '../app/hackathonAuth'
 import type { Task } from '../types/task'
 import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
 
 export function DashboardPage() {
+  const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [prompt, setPrompt] = useState('')
-  const user = useMemo(() => getHackathonUser(), [])
+  const user = getHackathonUser()
 
   const { plan, isPlanning, defaultPlan } = useGenerativeUI()
   const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
@@ -48,6 +49,16 @@ export function DashboardPage() {
             <Link className={styles.navLink} to="/register">
               Register
             </Link>
+            <button
+              className={styles.navButton}
+              type="button"
+              onClick={() => {
+                clearHackathonUser()
+                navigate('/login')
+              }}
+            >
+              Logout
+            </button>
           </nav>
         </div>
 

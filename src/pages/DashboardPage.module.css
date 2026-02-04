@@ -43,7 +43,21 @@
   text-decoration: none;
 }
 
+.navButton {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: rgba(234, 240, 255, 0.85);
+  cursor: pointer;
+}
+
 .navLink:hover {
+  text-decoration: underline;
+}
+
+.navButton:hover {
   text-decoration: underline;
 }
 

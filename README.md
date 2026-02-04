@@ -26,6 +26,8 @@ Routes:
 - `/register`
 - `/dashboard`
 
+If you deploy this as an SPA, make sure your host serves `index.html` for unknown routes (so refreshing `/dashboard` works).
+
 ## Configuring Tambo (optional)
 
 By default the app uses `TamboStubProvider` (no network calls).

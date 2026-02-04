@@ -6,23 +6,39 @@ import { azureOpenAIRouter } from './routes/azureOpenAI.js'
 import { healthRouter } from './routes/health.js'
 import { getOptionalEnvNumber } from './utils/env.js'
 
-dotenv.config()
-dotenv.config({ path: '.env.local' })
+const isProduction = process.env.NODE_ENV === 'production'
+if (!isProduction) {
+  dotenv.config({ path: '.env' })
+  dotenv.config({ path: '.env.local', override: true })
+} else {
+  dotenv.config({ path: '.env' })
+}
 
-const defaultCorsOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
-const corsOrigin = process.env.CORS_ORIGIN
+const defaultCorsOrigin = isProduction
+  ? false
+  : /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
+
+const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
       .map((value) => value.trim())
       .filter(Boolean)
-  : defaultCorsOrigin
+  : null
+
+const corsOptions = allowedOrigins
+  ? {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true)
+          return
+        }
+        callback(null, false)
+      },
+    }
+  : { origin: defaultCorsOrigin }
 
 const app = express()
 
-app.use(
-  cors({
-    origin: corsOrigin,
-  }),
-)
+app.use(cors(corsOptions))
 
 app.use(express.json({ limit: '1mb' }))
 

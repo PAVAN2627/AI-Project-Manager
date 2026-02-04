@@ -8,7 +8,6 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
 
   return (
     <div className={styles.page}>
@@ -18,7 +17,11 @@ export function RegisterPage() {
           className={styles.form}
           onSubmit={(e) => {
             e.preventDefault()
-            setHackathonUser({ name, email })
+            const trimmedName = name.trim()
+            const trimmedEmail = email.trim()
+            if (!trimmedEmail) return
+
+            setHackathonUser({ name: trimmedName || undefined, email: trimmedEmail })
             navigate('/dashboard')
           }}
         >
@@ -52,22 +55,6 @@ export function RegisterPage() {
             />
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              className={styles.input}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              required
-            />
-          </div>
-
           <div className={styles.actions}>
             <button className={styles.button} type="submit">
               Create account
@@ -79,7 +66,7 @@ export function RegisterPage() {
         </form>
 
         <p className={styles.helper}>
-          Hackathon-only flow: this form doesn’t create a real user.
+          Hackathon-only flow: this form doesn’t create a real account.
         </p>
       </div>
     </div>

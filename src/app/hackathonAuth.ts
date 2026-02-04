@@ -5,12 +5,26 @@ export type HackathonUser = {
 
 const STORAGE_KEY = 'ai_project_manager_hackathon_user'
 
+function getStorage() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
 export function setHackathonUser(user: HackathonUser) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+  const storage = getStorage()
+  if (!storage) return
+  storage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
 export function getHackathonUser(): HackathonUser | null {
-  const raw = localStorage.getItem(STORAGE_KEY)
+  const storage = getStorage()
+  if (!storage) return null
+
+  const raw = storage.getItem(STORAGE_KEY)
   if (!raw) return null
 
   try {
@@ -28,5 +42,7 @@ export function getHackathonUser(): HackathonUser | null {
 }
 
 export function clearHackathonUser() {
-  localStorage.removeItem(STORAGE_KEY)
+  const storage = getStorage()
+  if (!storage) return
+  storage.removeItem(STORAGE_KEY)
 }
