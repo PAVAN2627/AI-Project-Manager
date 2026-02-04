@@ -12,8 +12,19 @@ Right now this repo uses a tiny `MockTamboAdapter` (keyword heuristics) so we ca
 
 ```bash
 npm install
+
+# Terminal 1: backend API
+npm run dev:server
+
+# Terminal 2: frontend
 npm run dev
 ```
+
+Routes:
+
+- `/login`
+- `/register`
+- `/dashboard`
 
 ## Configuring Tambo (optional)
 
@@ -26,10 +37,16 @@ To register more components with Tambo, add them to `src/tambo/tamboComponents.t
 ## Project structure
 
 ```text
+server/
+  src/
+    routes/
+    services/
+    utils/
 src/
-  app/                 App shell + layout
+  app/                 Router setup
   components/          KanbanBoard, PrioritySelector, TeamAssignmentPanel, PromptBar
   data/                Mock tasks/users
+  pages/               Login, Register, Dashboard
   tambo/               Tambo adapter boundary (mock for now)
   types/               Shared TS types
   styles/              Global styles
