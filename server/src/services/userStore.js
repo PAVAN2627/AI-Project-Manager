@@ -10,6 +10,18 @@ import path from 'node:path'
 
 const usersFilePath = path.join(process.cwd(), 'server', 'data', 'users.json')
 
+let writeLock = Promise.resolve()
+
+function withWriteLock(fn) {
+  const next = writeLock.then(fn, fn)
+  // Keep the chain alive even if a write fails.
+  writeLock = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
+
 async function ensureUsersFile() {
   const dir = path.dirname(usersFilePath)
   await fs.mkdir(dir, { recursive: true })
@@ -29,30 +41,37 @@ async function readUsers() {
     const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed : []
   } catch {
+    console.warn(`Failed to parse users JSON at ${usersFilePath}; treating as empty list`)
     return []
   }
 }
 
 async function writeUsers(users) {
   await ensureUsersFile()
-  await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2) + '\n', 'utf8')
+
+  const dir = path.dirname(usersFilePath)
+  const tmpPath = path.join(dir, 'users.json.tmp')
+  await fs.writeFile(tmpPath, JSON.stringify(users, null, 2) + '\n', 'utf8')
+  await fs.rename(tmpPath, usersFilePath)
 }
 
 export async function createUser({ email, password }) {
-  const users = await readUsers()
-  const existing = users.find((u) => u.email === email)
-  if (existing) {
-    throw new Error('USER_EXISTS')
-  }
+  return withWriteLock(async () => {
+    const users = await readUsers()
+    const existing = users.find((u) => u.email === email)
+    if (existing) {
+      throw new Error('USER_EXISTS')
+    }
 
-  users.push({
-    email,
-    password,
-    createdAt: new Date().toISOString(),
+    users.push({
+      email,
+      password,
+      createdAt: new Date().toISOString(),
+    })
+
+    await writeUsers(users)
+    return { email }
   })
-
-  await writeUsers(users)
-  return { email }
 }
 
 export async function verifyUserPassword({ email, password }) {

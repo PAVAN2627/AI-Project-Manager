@@ -5,6 +5,8 @@ import { createUser, verifyUserPassword } from '../services/userStore.js'
 
 export const authRouter = Router()
 
+const MIN_PASSWORD_LENGTH = 4
+
 function normalizeEmail(value) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim().toLowerCase()
@@ -23,6 +25,18 @@ authRouter.post('/register', async (req, res) => {
 
   if (!email || !password) {
     res.status(400).json({ error: "Missing 'email' or 'password'" })
+    return
+  }
+
+  if (!email.includes('@')) {
+    res.status(400).json({ error: "Invalid 'email'" })
+    return
+  }
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    res
+      .status(400)
+      .json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
     return
   }
 
@@ -46,6 +60,11 @@ authRouter.post('/login', async (req, res) => {
 
   if (!email || !password) {
     res.status(400).json({ error: "Missing 'email' or 'password'" })
+    return
+  }
+
+  if (!email.includes('@')) {
+    res.status(400).json({ error: "Invalid 'email'" })
     return
   }
 
