@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { KanbanBoard } from '../components/KanbanBoard/KanbanBoard'
 import { PrioritySelector } from '../components/PrioritySelector/PrioritySelector'
@@ -7,7 +7,7 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockTasks } from '../data/mockTasks'
 import { mockUsers } from '../data/mockUsers'
-import { clearHackathonUser, getHackathonUser } from '../app/hackathonAuth'
+import { clearAuthSession, getAuthSession } from '../app/authSession'
 import type { Task } from '../types/task'
 import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
@@ -17,7 +17,7 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [prompt, setPrompt] = useState('')
-  const user = getHackathonUser()
+  const session = getAuthSession()
 
   const { plan, isPlanning, defaultPlan } = useGenerativeUI()
   const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
@@ -37,23 +37,17 @@ export function DashboardPage() {
         <div>
           <h1 className={styles.title}>AI Project Manager</h1>
           <p className={styles.subtitle}>Vite + React scaffold with a Tambo adapter boundary</p>
-          {user ? (
+          {session ? (
             <p className={styles.userMeta}>
-              Signed in as <strong>{user.name ?? user.email}</strong>
+              Signed in as <strong>{session.email}</strong>
             </p>
           ) : null}
           <nav className={styles.nav}>
-            <Link className={styles.navLink} to="/login">
-              Login
-            </Link>
-            <Link className={styles.navLink} to="/register">
-              Register
-            </Link>
             <button
               className={styles.navButton}
               type="button"
               onClick={() => {
-                clearHackathonUser()
+                clearAuthSession()
                 navigate('/login')
               }}
             >

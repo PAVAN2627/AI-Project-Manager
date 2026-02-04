@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Hackathon-only local auth storage
+server/data/users.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -26,6 +26,11 @@ Routes:
 - `/register`
 - `/dashboard`
 
+Minimal auth API (backend):
+
+- `POST /api/register` `{ email, password }`
+- `POST /api/login` `{ email, password }`
+
 If you deploy this as an SPA, make sure your host serves `index.html` for unknown routes (so refreshing `/dashboard` works).
 
 ## Configuring Tambo (optional)
