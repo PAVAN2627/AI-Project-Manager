@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { setHackathonUser } from '../app/hackathonAuth'
 import styles from './AuthPage.module.css'
 
 export function RegisterPage() {
@@ -17,6 +18,7 @@ export function RegisterPage() {
           className={styles.form}
           onSubmit={(e) => {
             e.preventDefault()
+            setHackathonUser({ name, email })
             navigate('/dashboard')
           }}
         >

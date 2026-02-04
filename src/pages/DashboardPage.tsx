@@ -7,6 +7,7 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockTasks } from '../data/mockTasks'
 import { mockUsers } from '../data/mockUsers'
+import { getHackathonUser } from '../app/hackathonAuth'
 import type { Task } from '../types/task'
 import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
@@ -15,6 +16,7 @@ import styles from './DashboardPage.module.css'
 export function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [prompt, setPrompt] = useState('')
+  const user = useMemo(() => getHackathonUser(), [])
 
   const { plan, isPlanning, defaultPlan } = useGenerativeUI()
   const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
@@ -34,6 +36,11 @@ export function DashboardPage() {
         <div>
           <h1 className={styles.title}>AI Project Manager</h1>
           <p className={styles.subtitle}>Vite + React scaffold with a Tambo adapter boundary</p>
+          {user ? (
+            <p className={styles.userMeta}>
+              Signed in as <strong>{user.name ?? user.email}</strong>
+            </p>
+          ) : null}
           <nav className={styles.nav}>
             <Link className={styles.navLink} to="/login">
               Login

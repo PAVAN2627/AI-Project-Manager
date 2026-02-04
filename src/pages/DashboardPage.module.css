@@ -25,6 +25,12 @@
   color: rgba(234, 240, 255, 0.75);
 }
 
+.userMeta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: rgba(234, 240, 255, 0.85);
+}
+
 .nav {
   display: flex;
   gap: 12px;

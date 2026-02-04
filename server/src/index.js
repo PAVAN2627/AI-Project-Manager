@@ -6,14 +6,21 @@ import { azureOpenAIRouter } from './routes/azureOpenAI.js'
 import { healthRouter } from './routes/health.js'
 import { getOptionalEnvNumber } from './utils/env.js'
 
-dotenv.config({ path: '.env.local' })
 dotenv.config()
+dotenv.config({ path: '.env.local' })
+
+const defaultCorsOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+  : defaultCorsOrigin
 
 const app = express()
 
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin,
   }),
 )
 

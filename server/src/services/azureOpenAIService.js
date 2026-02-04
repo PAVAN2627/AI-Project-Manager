@@ -1,10 +1,10 @@
 import { getRequiredEnv } from '../utils/env.js'
 
-function parseJsonOrText(bodyText) {
+function tryParseJson(bodyText) {
   try {
     return JSON.parse(bodyText)
   } catch {
-    return bodyText
+    return null
   }
 }
 
@@ -25,19 +25,22 @@ export async function createChatCompletion({ messages, temperature = 0.2 }) {
   })
 
   const bodyText = await response.text()
-  const parsed = parseJsonOrText(bodyText)
 
   if (!response.ok) {
+    const parsed = tryParseJson(bodyText)
     const message =
-      typeof parsed === 'object' && parsed && 'error' in parsed
+      parsed && typeof parsed === 'object' && 'error' in parsed
         ? JSON.stringify(parsed.error)
-        : typeof parsed === 'string'
-          ? parsed
-          : JSON.stringify(parsed)
+        : bodyText.length > 800
+          ? `${bodyText.slice(0, 800)}…`
+          : bodyText
 
-    const error = new Error(`Azure OpenAI request failed (${response.status}): ${message}`)
-    error.cause = parsed
-    throw error
+    throw new Error(`Azure OpenAI request failed (${response.status}): ${message}`)
+  }
+
+  const parsed = tryParseJson(bodyText)
+  if (!parsed) {
+    throw new Error('Azure OpenAI returned a non-JSON response')
   }
 
   return parsed
