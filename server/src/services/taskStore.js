@@ -11,6 +11,8 @@ import path from 'node:path'
 
 const tasksFilePath = path.join(process.cwd(), 'server', 'data', 'tasks.json')
 
+// Global write lock to serialize all mutations to the tasks file.
+// IMPORTANT: Any function that writes tasks must use `withWriteLock` to avoid concurrent write races.
 let writeLock = Promise.resolve()
 
 function withWriteLock(fn) {
@@ -27,6 +29,7 @@ function withWriteLock(fn) {
 }
 
 async function ensureTasksFile() {
+  // NOTE: Hackathon-only store. We eagerly create the directory + JSON file on first access.
   const dir = path.dirname(tasksFilePath)
   await fs.mkdir(dir, { recursive: true })
 

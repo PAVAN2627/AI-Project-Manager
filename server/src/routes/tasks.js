@@ -60,6 +60,10 @@ function normalizeTaskPriority(value) {
 }
 
 function normalizeAssigneeId(value) {
+  // Contract:
+  // - `undefined`/missing means "no value provided" (caller decides whether this implies "no change")
+  // - empty string normalizes to `undefined` (used to clear assignment)
+  // - non-string values are invalid (`null` return)
   if (value === undefined || value === null) return undefined
   if (typeof value !== 'string') return null
   const trimmed = value.trim()

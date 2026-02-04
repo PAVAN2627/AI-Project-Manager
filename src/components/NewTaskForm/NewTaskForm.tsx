@@ -15,7 +15,7 @@ export function NewTaskForm({ isBusy, error, onCreateTask }: NewTaskFormProps) {
     <section className={styles.panel} aria-label='New task form'>
       <header className={styles.header}>
         <h2 className={styles.title}>New task</h2>
-        <p className={styles.subtitle}>Create a task for your board</p>
+        <p className={styles.subtitle}>Create a task (defaults to todo / medium priority)</p>
       </header>
 
       <form
