@@ -5,6 +5,10 @@ function includesAny(haystack: string, needles: string[]) {
   return needles.some((n) => lowerHaystack.includes(n.toLowerCase()))
 }
 
+function matchesAny(haystack: string, patterns: RegExp[]) {
+  return patterns.some((p) => p.test(haystack))
+}
+
 /**
 * A placeholder adapter that *simulates* a Tambo-style Generative UI planner.
 *
@@ -16,23 +20,76 @@ export class MockTamboAdapter {
     const normalized = prompt.toLowerCase().trim()
     const hasPrompt = normalized.length > 0
 
-    const showKanban = hasPrompt && includesAny(normalized, ['task', 'tasks', 'kanban', 'board', 'show'])
-    const showPriority = hasPrompt && includesAny(normalized, ['priority', 'priorities', 'prioritize'])
-    const showAssignments =
-      hasPrompt && includesAny(normalized, ['assign', 'assignee', 'team', 'member', 'owner'])
+    const showPriority =
+      hasPrompt &&
+      includesAny(normalized, [
+        'priority',
+        'priorities',
+        'prioritize',
+        'reprioritize',
+        'severity',
+        'urgent',
+        'critical',
+      ])
 
-    const filterBlocked = includesAny(normalized, ['blocked', 'blocking'])
+    const statusFilter = (() => {
+      if (!hasPrompt) return undefined
+      if (includesAny(normalized, ['blocked', 'blocking', 'stuck'])) return 'blocked'
+      if (includesAny(normalized, ['in progress', 'in-progress', 'in_progress', 'doing', 'wip'])) return 'in_progress'
+      if (includesAny(normalized, ['todo', 'to do', 'to-do', 'backlog'])) return 'todo'
+      if (includesAny(normalized, ['done', 'completed', 'finished'])) return 'done'
+      return undefined
+    })()
+
+    const showTeamAssignment = (() => {
+      if (!hasPrompt) return false
+
+      const mentionsPeople = includesAny(normalized, [
+        'assignee',
+        'assignees',
+        'team',
+        'member',
+        'members',
+        'owner',
+        'owners',
+        'people',
+        'person',
+      ])
+
+      const explicitlyAssigneeFocused = matchesAny(normalized, [
+        /\bassigned\s+to\b/i,
+        /\bassign\s+to\b/i,
+        /\bassignee\b/i,
+      ])
+
+      const isAssigningPriorities = matchesAny(normalized, [
+        /\bassign(?:ing|ed)?\s+(?:a\s+)?priorit(?:y|ies)\b/i,
+        /\bset(?:ting)?\s+priorit(?:y|ies)\b/i,
+      ])
+
+      if (isAssigningPriorities) return explicitlyAssigneeFocused
+
+      return explicitlyAssigneeFocused || (mentionsPeople && matchesAny(normalized, [/\bassign\b/i, /\breassign\b/i]))
+    })()
+
+    const showKanban =
+      hasPrompt &&
+      !includesAny(normalized, ['hide kanban', 'hide board', 'no kanban', 'no board', 'without kanban']) &&
+      (showPriority ||
+        showTeamAssignment ||
+        Boolean(statusFilter) ||
+        includesAny(normalized, ['task', 'tasks', 'kanban', 'board', 'show', 'display', 'list']))
 
     return {
       kanban: {
         enabled: showKanban,
-        filterStatus: filterBlocked ? 'blocked' : undefined,
+        filterStatus: statusFilter,
       },
       prioritySelector: {
         enabled: showPriority,
       },
       teamAssignment: {
-        enabled: showAssignments,
+        enabled: showTeamAssignment,
       },
     }
   }
