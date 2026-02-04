@@ -1,9 +1,9 @@
-export type HackathonUser = {
-  name?: string
+export type AuthSession = {
   email: string
+  token: string
 }
 
-const STORAGE_KEY = 'ai_project_manager_hackathon_user'
+const STORAGE_KEY = 'ai_project_manager_session'
 
 function getStorage() {
   try {
@@ -14,13 +14,13 @@ function getStorage() {
   }
 }
 
-export function setHackathonUser(user: HackathonUser) {
+export function setAuthSession(session: AuthSession) {
   const storage = getStorage()
   if (!storage) return
-  storage.setItem(STORAGE_KEY, JSON.stringify(user))
+  storage.setItem(STORAGE_KEY, JSON.stringify(session))
 }
 
-export function getHackathonUser(): HackathonUser | null {
+export function getAuthSession(): AuthSession | null {
   const storage = getStorage()
   if (!storage) return null
 
@@ -31,17 +31,18 @@ export function getHackathonUser(): HackathonUser | null {
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
     if (typeof parsed.email !== 'string' || parsed.email.trim() === '') return null
+    if (typeof parsed.token !== 'string' || parsed.token.trim() === '') return null
 
     return {
       email: parsed.email,
-      name: typeof parsed.name === 'string' && parsed.name.trim() !== '' ? parsed.name : undefined,
+      token: parsed.token,
     }
   } catch {
     return null
   }
 }
 
-export function clearHackathonUser() {
+export function clearAuthSession() {
   const storage = getStorage()
   if (!storage) return
   storage.removeItem(STORAGE_KEY)

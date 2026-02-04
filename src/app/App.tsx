@@ -1,15 +1,15 @@
 import type { ReactElement } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { getHackathonUser } from './hackathonAuth'
+import { getAuthSession } from './authSession'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 
-function RequireHackathonUser({ children }: { children: ReactElement }) {
-  const user = typeof window === 'undefined' ? null : getHackathonUser()
-  if (!user) {
+function RequireSession({ children }: { children: ReactElement }) {
+  const session = typeof window === 'undefined' ? null : getAuthSession()
+  if (!session) {
     return <Navigate to="/login" replace />
   }
 
@@ -17,8 +17,8 @@ function RequireHackathonUser({ children }: { children: ReactElement }) {
 }
 
 function RedirectIfAuthenticated({ children }: { children: ReactElement }) {
-  const user = typeof window === 'undefined' ? null : getHackathonUser()
-  if (user) {
+  const session = typeof window === 'undefined' ? null : getAuthSession()
+  if (session) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -48,9 +48,9 @@ export function App() {
       <Route
         path="/dashboard"
         element={
-          <RequireHackathonUser>
+          <RequireSession>
             <DashboardPage />
-          </RequireHackathonUser>
+          </RequireSession>
         }
       />
       <Route path="*" element={<NotFoundPage />} />
