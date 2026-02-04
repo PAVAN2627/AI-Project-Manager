@@ -15,6 +15,14 @@ npm install
 npm run dev
 ```
 
+## Configuring Tambo (optional)
+
+By default the app uses `TamboStubProvider` (no network calls).
+
+To run against the real Tambo API, copy `.env.example` to `.env.local` and set `VITE_TAMBO_API_KEY`.
+
+To register more components with Tambo, add them to `src/tambo/tamboComponents.ts` with a `propsSchema`.
+
 ## Project structure
 
 ```text
@@ -34,6 +42,8 @@ The integration point is the adapter boundary in `src/tambo/`.
 - `src/tambo/types.ts` defines `GenerativeUIAdapter` and `UIPlan`.
 - `src/tambo/mockTamboAdapter.ts` simulates what Tambo will eventually do.
 - `src/tambo/useGenerativeUI.ts` is the UI-facing hook.
+- `src/tambo/tamboComponents.ts` registers UI components (starting with `KanbanBoard`) with the Tambo React SDK.
+- `src/tambo/TamboRootProvider.tsx` wraps the app with either `TamboProvider` (when `VITE_TAMBO_API_KEY` is set) or `TamboStubProvider`.
 
 Once we bring in the real Tambo SDK, we should be able to replace `MockTamboAdapter` with a real adapter implementation,
 without refactoring the UI components.
