@@ -5,6 +5,7 @@ import express from 'express'
 import { authRouter } from './routes/auth.js'
 import { azureOpenAIRouter } from './routes/azureOpenAI.js'
 import { healthRouter } from './routes/health.js'
+import { tasksRouter } from './routes/tasks.js'
 import { getOptionalEnvNumber } from './utils/env.js'
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -44,6 +45,7 @@ app.use(cors(corsOptions))
 app.use(express.json({ limit: '1mb' }))
 
 app.use('/api', authRouter)
+app.use('/api', tasksRouter)
 app.use('/api/health', healthRouter)
 app.use('/api/azure-openai', azureOpenAIRouter)
 

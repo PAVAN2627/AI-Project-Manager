@@ -10,11 +10,14 @@ type PrioritySelectorProps = {
 }
 
 export function PrioritySelector({ tasks, onUpdateTask }: PrioritySelectorProps) {
-  const [selectedTaskId, setSelectedTaskId] = useState(tasks[0]?.id ?? '')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
+
+  const effectiveSelectedTaskId =
+    selectedTaskId && tasks.some((t) => t.id === selectedTaskId) ? selectedTaskId : (tasks[0]?.id ?? '')
 
   const selectedTask = useMemo(
-    () => tasks.find((t) => t.id === selectedTaskId) ?? null,
-    [selectedTaskId, tasks],
+    () => tasks.find((t) => t.id === effectiveSelectedTaskId) ?? null,
+    [effectiveSelectedTaskId, tasks],
   )
 
   if (tasks.length === 0) return null
@@ -30,7 +33,7 @@ export function PrioritySelector({ tasks, onUpdateTask }: PrioritySelectorProps)
         Task
         <select
           className={styles.select}
-          value={selectedTaskId}
+          value={effectiveSelectedTaskId}
           onChange={(e) => setSelectedTaskId(e.target.value)}
         >
           {tasks.map((task) => (

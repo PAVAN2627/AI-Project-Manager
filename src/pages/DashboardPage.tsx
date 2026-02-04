@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { KanbanBoard } from '../components/KanbanBoard/KanbanBoard'
+import { NewTaskForm } from '../components/NewTaskForm/NewTaskForm'
 import { PrioritySelector } from '../components/PrioritySelector/PrioritySelector'
 import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
-import { mockTasks } from '../data/mockTasks'
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
+import { createTask, getTasks, updateTask } from '../app/taskApi'
 import type { Task } from '../types/task'
 import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
@@ -15,9 +16,12 @@ import styles from './DashboardPage.module.css'
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [taskError, setTaskError] = useState<string | null>(null)
+  const [isTasksBusy, setIsTasksBusy] = useState(false)
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true)
   const [prompt, setPrompt] = useState('')
-  const session = getAuthSession()
+  const session = useMemo(() => getAuthSession(), [])
 
   const { plan, isPlanning, defaultPlan } = useGenerativeUI()
   const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
@@ -30,6 +34,69 @@ export function DashboardPage() {
     }
     return tasks
   }, [activePlan, tasks])
+
+  useEffect(() => {
+    if (!session) return
+    let cancelled = false
+
+    void getTasks(session)
+      .then((next) => {
+        if (cancelled) return
+        setTasks(next)
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setTaskError(error instanceof Error ? error.message : 'Failed to load tasks')
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsLoadingTasks(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [session])
+
+  function handleCreateTask(title: string) {
+    if (!session) return
+
+    setIsTasksBusy(true)
+    setTaskError(null)
+    void createTask(session, { title })
+      .then((task) => {
+        setTasks((prev) => [task, ...prev])
+      })
+      .catch((error) => {
+        setTaskError(error instanceof Error ? error.message : 'Failed to create task')
+      })
+      .finally(() => {
+        setIsTasksBusy(false)
+      })
+  }
+
+  function handleUpdateTask(nextTask: Task) {
+    if (!session) return
+
+    setTaskError(null)
+    setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? nextTask : t)))
+
+    setIsTasksBusy(true)
+    void updateTask(session, nextTask.id, {
+      status: nextTask.status,
+      priority: nextTask.priority,
+      assigneeId: nextTask.assigneeId ?? '',
+    })
+      .then((saved) => {
+        setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))
+      })
+      .catch((error) => {
+        setTaskError(error instanceof Error ? error.message : 'Failed to update task')
+      })
+      .finally(() => {
+        setIsTasksBusy(false)
+      })
+  }
 
   return (
     <div className={styles.page}>
@@ -70,7 +137,7 @@ export function DashboardPage() {
 
       <main className={styles.main}>
         {activePlan.kanban.enabled ? (
-          <KanbanBoard tasks={visibleTasks} />
+          <KanbanBoard tasks={visibleTasks} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
             <p>
@@ -81,12 +148,18 @@ export function DashboardPage() {
         )}
 
         <section className={styles.sidePanel}>
+          <NewTaskForm
+            isBusy={isTasksBusy || isLoadingTasks}
+            error={taskError}
+            onCreateTask={(title) => {
+              handleCreateTask(title)
+            }}
+          />
+
           {activePlan.prioritySelector.enabled ? (
             <PrioritySelector
               tasks={tasks}
-              onUpdateTask={(updated) => {
-                setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-              }}
+              onUpdateTask={handleUpdateTask}
             />
           ) : null}
 
@@ -94,9 +167,7 @@ export function DashboardPage() {
             <TeamAssignmentPanel
               tasks={tasks}
               users={mockUsers}
-              onUpdateTask={(updated) => {
-                setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-              }}
+              onUpdateTask={handleUpdateTask}
             />
           ) : null}
 

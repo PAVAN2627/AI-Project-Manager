@@ -4,7 +4,7 @@ import { MockTamboAdapter } from './mockTamboAdapter'
 import type { GenerativeUIAdapter, UIPlan } from './types'
 
 const DEFAULT_PLAN: UIPlan = {
-  kanban: { enabled: false },
+  kanban: { enabled: true },
   prioritySelector: { enabled: false },
   teamAssignment: { enabled: false },
 }

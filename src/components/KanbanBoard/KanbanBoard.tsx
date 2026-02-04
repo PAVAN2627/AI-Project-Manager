@@ -1,12 +1,13 @@
-import type { Task } from '../../types/task'
+import type { Task, TaskStatus } from '../../types/task'
 import { TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER } from '../../types/task'
 import styles from './KanbanBoard.module.css'
 
 type KanbanBoardProps = {
   tasks: Task[]
+  onUpdateTask?: (task: Task) => void
 }
 
-export function KanbanBoard({ tasks }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onUpdateTask }: KanbanBoardProps) {
   return (
     <section className={styles.board} aria-label='Kanban board'>
       {TASK_STATUS_ORDER.map((status) => {
@@ -26,6 +27,21 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
                   <div className={styles.cardMeta}>
                     <span className={styles.badge}>{TASK_PRIORITY_LABEL[task.priority]}</span>
                     {task.assigneeId ? <span className={styles.badge}>@{task.assigneeId}</span> : null}
+                    {onUpdateTask ? (
+                      <select
+                        className={styles.statusSelect}
+                        value={task.status}
+                        onChange={(e) => {
+                          onUpdateTask({ ...task, status: e.target.value as TaskStatus })
+                        }}
+                      >
+                        {TASK_STATUS_ORDER.map((next) => (
+                          <option key={next} value={next}>
+                            {TASK_STATUS_LABEL[next]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
                   </div>
                 </article>
               ))}
