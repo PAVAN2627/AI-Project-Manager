@@ -26,14 +26,57 @@ function getSessionToken(req) {
 
 function requireSession(req, res, next) {
   const token = getSessionToken(req)
-  const session = token ? getSession(token) : null
-  if (!session) {
+  const ownerEmail = token ? getOwnerEmailFromToken(token) : null
+  if (!ownerEmail) {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
 
-  res.locals.ownerEmail = session.email
+  res.locals.ownerEmail = ownerEmail
   next()
+}
+
+function getEmailFromJwt(token) {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+
+  const payloadPart = parts[1]
+  if (!payloadPart) return null
+
+  try {
+    const payloadText = Buffer.from(payloadPart, 'base64url').toString('utf8')
+    const payload = JSON.parse(payloadText)
+    if (!payload || typeof payload !== 'object') return null
+
+    const maybeEmail = payload.email
+    if (typeof maybeEmail === 'string' && maybeEmail.trim() !== '') {
+      return maybeEmail.trim().toLowerCase()
+    }
+
+    const identityEmails = payload.firebase?.identities?.email
+    if (Array.isArray(identityEmails)) {
+      const first = identityEmails[0]
+      if (typeof first === 'string' && first.trim() !== '') {
+        return first.trim().toLowerCase()
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+function getOwnerEmailFromToken(token) {
+  const session = getSession(token)
+  if (session) return session.email
+
+  // Hackathon-only behavior: accept a Firebase ID token and derive the owner identity from its payload.
+  // This does NOT validate the JWT signature.
+  const emailFromJwt = getEmailFromJwt(token)
+  if (emailFromJwt) return emailFromJwt
+
+  return null
 }
 
 function normalizeTitle(value) {

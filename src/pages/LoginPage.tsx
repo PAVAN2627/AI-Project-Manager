@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { login } from '../app/authApi'
-import { setAuthSession } from '../app/authSession'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+
+import { auth } from '../firebase/firebase'
+import { isFirebaseConfigured } from '../firebase/firebaseConfig'
 import styles from './AuthPage.module.css'
 
 export function LoginPage() {
@@ -25,16 +27,12 @@ export function LoginPage() {
             const trimmedEmail = email.trim().toLowerCase()
             const trimmedPassword = password.trim()
             if (!trimmedEmail || !trimmedPassword) return
+            if (!isFirebaseConfigured) return
 
             try {
               setIsSubmitting(true)
               setError(null)
-              const session = await login({
-                email: trimmedEmail,
-                password: trimmedPassword,
-              })
-
-              setAuthSession(session)
+              await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword)
               navigate('/dashboard')
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Login failed')
@@ -75,7 +73,11 @@ export function LoginPage() {
           </div>
 
           <div className={styles.actions}>
-            <button className={styles.button} type="submit" disabled={isSubmitting}>
+            <button
+              className={styles.button}
+              type="submit"
+              disabled={isSubmitting || !isFirebaseConfigured}
+            >
               {isSubmitting ? 'Signing in…' : 'Login'}
             </button>
             <Link className={styles.link} to="/register">
@@ -83,6 +85,10 @@ export function LoginPage() {
             </Link>
           </div>
         </form>
+
+        {!isFirebaseConfigured ? (
+          <p className={styles.helper}>Firebase isn’t configured yet. Set `VITE_FIREBASE_*` in `.env.local`.</p>
+        ) : null}
 
         {error ? <p className={styles.helper}>{error}</p> : null}
       </div>

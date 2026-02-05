@@ -1,15 +1,19 @@
 import type { ReactElement } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { getAuthSession } from './authSession'
+import { useAuthUser } from './useAuthUser'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 
 function RequireSession({ children }: { children: ReactElement }) {
-  const session = typeof window === 'undefined' ? null : getAuthSession()
-  if (!session) {
+  const { user, isLoading } = useAuthUser()
+  if (isLoading) {
+    return <div style={{ padding: 24 }}>Loading…</div>
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 
@@ -17,8 +21,12 @@ function RequireSession({ children }: { children: ReactElement }) {
 }
 
 function RedirectIfAuthenticated({ children }: { children: ReactElement }) {
-  const session = typeof window === 'undefined' ? null : getAuthSession()
-  if (session) {
+  const { user, isLoading } = useAuthUser()
+  if (isLoading) {
+    return <div style={{ padding: 24 }}>Loading…</div>
+  }
+
+  if (user) {
     return <Navigate to="/dashboard" replace />
   }
 
