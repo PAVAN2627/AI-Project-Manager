@@ -7,10 +7,14 @@ import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 
+function AuthLoading() {
+  return <div style={{ padding: 24 }}>Loading…</div>
+}
+
 function RequireSession({ children }: { children: ReactElement }) {
   const { user, isLoading } = useAuthUser()
   if (isLoading) {
-    return <div style={{ padding: 24 }}>Loading…</div>
+    return <AuthLoading />
   }
 
   if (!user) {
@@ -23,7 +27,7 @@ function RequireSession({ children }: { children: ReactElement }) {
 function RedirectIfAuthenticated({ children }: { children: ReactElement }) {
   const { user, isLoading } = useAuthUser()
   if (isLoading) {
-    return <div style={{ padding: 24 }}>Loading…</div>
+    return <AuthLoading />
   }
 
   if (user) {
