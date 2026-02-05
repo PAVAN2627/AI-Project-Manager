@@ -9,15 +9,17 @@ export type IntentInterpretation = {
   showTeamAssignment: boolean
 }
 
+const INTENT_FILTER_STATUS_BY_NORMALIZED = Object.fromEntries(
+  INTENT_FILTER_STATUSES.map((status) => [status.toLowerCase(), status] as const),
+) as Record<string, IntentFilterStatus>
+
 function parseIntentFilterStatus(value: unknown): IntentFilterStatus | null {
   if (typeof value !== 'string') return null
   const normalized = value.trim().toLowerCase()
 
-  if (normalized === '' || normalized === 'all') return 'All'
-  if (normalized === 'blocked') return 'Blocked'
-  if (normalized === 'done') return 'Done'
+  if (normalized === '') return 'All'
 
-  return null
+  return INTENT_FILTER_STATUS_BY_NORMALIZED[normalized] ?? null
 }
 
 function parseIntentInterpretation(value: unknown): IntentInterpretation | null {
@@ -38,13 +40,32 @@ function parseIntentInterpretation(value: unknown): IntentInterpretation | null 
 
   if (!hasAnyKnownKey) return null
 
+  if ('showKanban' in maybe && maybe.showKanban !== undefined && typeof maybe.showKanban !== 'boolean') return null
+  if (
+    'showPrioritySelector' in maybe &&
+    maybe.showPrioritySelector !== undefined &&
+    typeof maybe.showPrioritySelector !== 'boolean'
+  ) {
+    return null
+  }
+  if (
+    'showTeamAssignment' in maybe &&
+    maybe.showTeamAssignment !== undefined &&
+    typeof maybe.showTeamAssignment !== 'boolean'
+  ) {
+    return null
+  }
+
   const showKanban = typeof maybe.showKanban === 'boolean' ? maybe.showKanban : true
-  const showPrioritySelector =
-    typeof maybe.showPrioritySelector === 'boolean' ? maybe.showPrioritySelector : false
+  const showPrioritySelector = typeof maybe.showPrioritySelector === 'boolean' ? maybe.showPrioritySelector : false
   const showTeamAssignment = typeof maybe.showTeamAssignment === 'boolean' ? maybe.showTeamAssignment : false
 
-  const rawFilterStatus = parseIntentFilterStatus(maybe.filterStatus)
-  const filterStatus = rawFilterStatus ?? 'All'
+  let filterStatus: IntentFilterStatus = 'All'
+  if ('filterStatus' in maybe && maybe.filterStatus !== undefined) {
+    const parsed = parseIntentFilterStatus(maybe.filterStatus)
+    if (!parsed) return null
+    filterStatus = parsed
+  }
 
   return {
     showKanban,
