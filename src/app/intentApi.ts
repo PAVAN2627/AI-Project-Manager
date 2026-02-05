@@ -36,14 +36,7 @@ function parseIntentInterpretation(value: unknown): IntentInterpretation | null 
     'showPrioritySelector' in maybe ||
     'showTeamAssignment' in maybe
 
-  if (!hasAnyKnownKey) {
-    return {
-      showKanban: true,
-      filterStatus: 'All',
-      showPrioritySelector: false,
-      showTeamAssignment: false,
-    }
-  }
+  if (!hasAnyKnownKey) return null
 
   const showKanban = typeof maybe.showKanban === 'boolean' ? maybe.showKanban : true
   const showPrioritySelector =

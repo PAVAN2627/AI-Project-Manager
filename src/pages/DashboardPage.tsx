@@ -170,8 +170,6 @@ export function DashboardPage() {
       setIntent(nextIntent)
       setActivePlan(toUIPlan(nextIntent))
     } catch (error) {
-      setIntent(null)
-      setActivePlan(INITIAL_PLAN)
       setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
     } finally {
       setIsInterpretingIntent(false)
