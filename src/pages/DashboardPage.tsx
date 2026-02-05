@@ -185,9 +185,9 @@ export function DashboardPage() {
             Prompt-driven UI: describe what you want to see, and the interface adapts from an AI decision plan.
           </p>
           <p className={styles.whyText}>
-            <strong>Why this UI?</strong> It keeps the demo transparent: your prompt becomes a small JSON plan
-            (shown in <em>AI UI Decision Plan</em>), and only the relevant tools (Kanban, priority, team
-            assignment) are enabled.
+            <strong>Why this UI?</strong> For transparency: your prompt becomes a small JSON plan (shown in{' '}
+            <span className={styles.planLabel}>AI UI Decision Plan</span>), and the dashboard renders only what
+            the plan enables.
           </p>
           {session ? (
             <p className={styles.userMeta}>

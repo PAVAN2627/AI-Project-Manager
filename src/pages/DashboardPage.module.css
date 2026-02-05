@@ -18,6 +18,12 @@
   max-width: 560px;
 }
 
+@media (max-width: 1100px) {
+  .headerIntro {
+    max-width: 100%;
+  }
+}
+
 .title {
   font-size: 22px;
   margin: 0;
@@ -37,9 +43,8 @@
   color: rgba(234, 240, 255, 0.82);
 }
 
-.whyText em {
+.planLabel {
   color: rgba(234, 240, 255, 0.9);
-  font-style: normal;
 }
 
 .userMeta {
