@@ -15,7 +15,9 @@
 }
 
 .headerIntro {
-  max-width: 560px;
+  flex: 1;
+  min-width: 280px;
+  max-width: 680px;
 }
 
 @media (max-width: 900px) {
@@ -144,7 +146,7 @@
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  max-height: 280px;
+  max-height: min(280px, 40vh);
   overflow: auto;
 }
 

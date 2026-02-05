@@ -21,6 +21,8 @@ const INITIAL_PLAN: UIPlan = {
   teamAssignment: { enabled: false },
 }
 
+const PLAN_LABEL = 'AI UI Decision Plan'
+
 const KANBAN_FILTER_STATUS_MAP: Record<IntentFilterStatus, UIPlan['kanban']['filterStatus']> = {
   All: undefined,
   Blocked: 'blocked',
@@ -186,8 +188,8 @@ export function DashboardPage() {
           </p>
           <p className={styles.whyText}>
             <strong>Why this UI?</strong> For transparency. Your prompt becomes a small JSON plan (shown in{' '}
-            <span className={styles.planLabel}>AI UI Decision Plan</span>), and the dashboard only renders what
-            that plan enables.
+            <span className={styles.planLabel}>{PLAN_LABEL}</span>), and the dashboard only renders what that
+            plan enables.
           </p>
           {session ? (
             <p className={styles.userMeta}>
@@ -270,7 +272,7 @@ export function DashboardPage() {
                 setIsPlanDetailsOpen(e.currentTarget.open)
               }}
             >
-              <summary>AI UI Decision Plan</summary>
+              <summary>{PLAN_LABEL}</summary>
               {intentError ? <p className={styles.planError}>{intentError}</p> : null}
               {intent ? (
                 <pre className={styles.planJson}>{JSON.stringify(intent, null, 2)}</pre>
