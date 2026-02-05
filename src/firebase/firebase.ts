@@ -11,7 +11,9 @@ function warnIfUsingDemoConfig() {
   if (hasWarnedAboutConfig) return
   hasWarnedAboutConfig = true
 
-  console.warn(
+  const log = import.meta.env.DEV ? console.warn : console.error
+
+  log(
     '[firebase] Missing VITE_FIREBASE_* env vars. Using demo Firebase config; set real values in `.env.local` (dev) or your deployment env.'
   )
 }

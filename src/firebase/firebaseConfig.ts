@@ -28,10 +28,10 @@ export const isFirebaseConfigured = REQUIRED_ENV_KEYS.every((key) => {
 })
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: getEnvString('VITE_FIREBASE_API_KEY', 'demo-api-key'),
-  authDomain: getEnvString('VITE_FIREBASE_AUTH_DOMAIN', 'demo.firebaseapp.com'),
-  projectId: getEnvString('VITE_FIREBASE_PROJECT_ID', 'demo-project'),
-  storageBucket: getEnvString('VITE_FIREBASE_STORAGE_BUCKET', 'demo-project.appspot.com'),
+  apiKey: getEnvString('VITE_FIREBASE_API_KEY', 'missing-firebase-api-key'),
+  authDomain: getEnvString('VITE_FIREBASE_AUTH_DOMAIN', 'missing-firebase-auth-domain'),
+  projectId: getEnvString('VITE_FIREBASE_PROJECT_ID', 'missing-firebase-project-id'),
+  storageBucket: getEnvString('VITE_FIREBASE_STORAGE_BUCKET', 'missing-firebase-storage-bucket'),
   messagingSenderId: getEnvString('VITE_FIREBASE_MESSAGING_SENDER_ID', '000000000000'),
-  appId: getEnvString('VITE_FIREBASE_APP_ID', '1:000000000000:web:0000000000000000'),
+  appId: getEnvString('VITE_FIREBASE_APP_ID', '1:000000000000:web:missing-firebase-app-id'),
 }
