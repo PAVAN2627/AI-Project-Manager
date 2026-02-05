@@ -289,7 +289,11 @@ npm run lint         # Code quality check
 - Inspiring example for other developers
 - Clear path to commercialization
 
-## 🎬 **Live Demo**
+## 🚀 **Live Demo**
+
+**🌐 Frontend (Vercel)**: [https://ai-project-manager-lovat.vercel.app/](https://ai-project-manager-lovat.vercel.app/)
+**🔧 Backend API (Railway)**: [https://web-production-96b5c.up.railway.app/](https://web-production-96b5c.up.railway.app/)
+**💚 Health Check**: [https://web-production-96b5c.up.railway.app/api/health](https://web-production-96b5c.up.railway.app/api/health)
 
 **Try these prompts to experience the magic:**
 
@@ -314,8 +318,9 @@ This project represents the **rebellion against static interfaces** and the **aw
 - **Team**: [Your Name/Team]
 - **Category**: The UI Strikes Back
 - **Tech Stack**: React + TypeScript + Tambo SDK + Firebase
-- **Live Demo**: [Deploy URL]
-- **Repository**: [GitHub URL]
+- **Live Demo**: [https://ai-project-manager-lovat.vercel.app/](https://ai-project-manager-lovat.vercel.app/)
+- **Backend API**: [https://web-production-96b5c.up.railway.app/](https://web-production-96b5c.up.railway.app/)
+- **Repository**: [https://github.com/PAVAN2627/AI-Project-Manager](https://github.com/PAVAN2627/AI-Project-Manager)
 - **Video Demo**: [YouTube URL]
 
 **May the Force (and Tambo) be with you!** 🌟
