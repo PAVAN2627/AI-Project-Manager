@@ -24,10 +24,14 @@ export function LoginPage() {
             e.preventDefault()
             if (isSubmitting) return
 
+            if (!isFirebaseConfigured) {
+              setError('Firebase is not configured. Set `VITE_FIREBASE_*` in `.env.local`.')
+              return
+            }
+
             const trimmedEmail = email.trim().toLowerCase()
             const trimmedPassword = password.trim()
             if (!trimmedEmail || !trimmedPassword) return
-            if (!isFirebaseConfigured) return
 
             try {
               setIsSubmitting(true)

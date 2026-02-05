@@ -5,6 +5,8 @@ import { createTaskForOwner, listTasksForOwner, updateTaskForOwner } from '../se
 
 export const tasksRouter = Router()
 
+let hasWarnedAboutUnverifiedFirebaseTokens = false
+
 const TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'done']
 const TASK_PRIORITIES = ['low', 'medium', 'high', 'critical']
 
@@ -38,7 +40,7 @@ function requireSession(req, res, next) {
 
 function getEmailFromJwt(token) {
   const parts = token.split('.')
-  if (parts.length < 2) return null
+  if (parts.length !== 3) return null
 
   const payloadPart = parts[1]
   if (!payloadPart) return null
@@ -72,9 +74,21 @@ function getOwnerEmailFromToken(token) {
   if (session) return session.email
 
   // Hackathon-only behavior: accept a Firebase ID token and derive the owner identity from its payload.
-  // This does NOT validate the JWT signature.
-  const emailFromJwt = getEmailFromJwt(token)
-  if (emailFromJwt) return emailFromJwt
+  // This does NOT validate the JWT signature; only enabled outside production and when explicitly opted in.
+  const acceptUnverifiedFirebaseTokens = process.env.ACCEPT_UNVERIFIED_FIREBASE_TOKENS === 'true'
+  if (process.env.NODE_ENV !== 'production' && acceptUnverifiedFirebaseTokens) {
+    const emailFromJwt = getEmailFromJwt(token)
+    if (emailFromJwt) {
+      if (!hasWarnedAboutUnverifiedFirebaseTokens) {
+        hasWarnedAboutUnverifiedFirebaseTokens = true
+        console.warn(
+          '[auth] UNSAFE: accepting Firebase ID tokens without signature verification (enabled via ACCEPT_UNVERIFIED_FIREBASE_TOKENS).'
+        )
+      }
+
+      return emailFromJwt
+    }
+  }
 
   return null
 }
