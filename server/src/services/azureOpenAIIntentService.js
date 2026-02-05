@@ -1,6 +1,6 @@
 import { createChatCompletion } from './azureOpenAIService.js'
 
-const MAX_PROMPT_LENGTH = 4_000
+export const MAX_PROMPT_LENGTH = 4_000
 
 function normalizePrompt(value) {
   if (typeof value !== 'string') return null

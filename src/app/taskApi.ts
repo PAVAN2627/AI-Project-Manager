@@ -1,4 +1,3 @@
-import type { AuthSession } from './authSession'
 import type { Task, TaskPriority, TaskStatus } from '../types/task'
 
 const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
@@ -40,16 +39,16 @@ function getErrorMessage(data: unknown, fallback: string) {
   return fallback
 }
 
-function getAuthHeaders(session: AuthSession) {
+function getAuthHeaders(authToken: string) {
   return {
-    authorization: `Bearer ${session.token}`,
+    authorization: `Bearer ${authToken}`,
   }
 }
 
-export async function getTasks(session: AuthSession): Promise<Task[]> {
+export async function getTasks(authToken: string): Promise<Task[]> {
   const response = await fetch('/api/tasks', {
     headers: {
-      ...getAuthHeaders(session),
+      ...getAuthHeaders(authToken),
     },
   })
 
@@ -67,7 +66,7 @@ export async function getTasks(session: AuthSession): Promise<Task[]> {
 }
 
 export async function createTask(
-  session: AuthSession,
+  authToken: string,
   body: {
     title: string
     status?: TaskStatus
@@ -79,7 +78,7 @@ export async function createTask(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      ...getAuthHeaders(session),
+      ...getAuthHeaders(authToken),
     },
     body: JSON.stringify(body),
   })
@@ -98,7 +97,7 @@ export async function createTask(
 }
 
 export async function updateTask(
-  session: AuthSession,
+  authToken: string,
   id: string,
   patch: {
     status?: TaskStatus
@@ -110,7 +109,7 @@ export async function updateTask(
     method: 'PUT',
     headers: {
       'content-type': 'application/json',
-      ...getAuthHeaders(session),
+      ...getAuthHeaders(authToken),
     },
     body: JSON.stringify(patch),
   })

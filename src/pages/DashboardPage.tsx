@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { signOut } from 'firebase/auth'
+
+import { useAuthUser } from '../app/useAuthUser'
 import { KanbanBoard } from '../components/KanbanBoard/KanbanBoard'
 import { NewTaskForm } from '../components/NewTaskForm/NewTaskForm'
 import { PrioritySelector } from '../components/PrioritySelector/PrioritySelector'
 import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockUsers } from '../data/mockUsers'
-import { clearAuthSession, getAuthSession } from '../app/authSession'
 import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
 import { interpretIntent } from '../app/intentApi'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
+import { auth } from '../firebase/firebase'
 import type { Task } from '../types/task'
 import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
@@ -48,6 +51,7 @@ function toUIPlan(intent: IntentInterpretation): UIPlan {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const { user } = useAuthUser()
   const [tasks, setTasks] = useState<Task[]>([])
   const [taskError, setTaskError] = useState<string | null>(null)
   const [isTasksBusy, setIsTasksBusy] = useState(false)
@@ -57,7 +61,6 @@ export function DashboardPage() {
   const [intentError, setIntentError] = useState<string | null>(null)
   const [isInterpretingIntent, setIsInterpretingIntent] = useState(false)
   const [isPlanDetailsOpen, setIsPlanDetailsOpen] = useState(false)
-  const session = useMemo(() => getAuthSession(), [])
 
   const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
   const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
@@ -71,10 +74,15 @@ export function DashboardPage() {
   }, [activePlan, tasks])
 
   useEffect(() => {
-    if (!session) return
+    if (!user) return
     let cancelled = false
 
-    void getTasks(session)
+    setIsLoadingTasks(true)
+    setTaskError(null)
+
+    void user
+      .getIdToken()
+      .then((token) => getTasks(token))
       .then((next) => {
         if (cancelled) return
         setTasks(next)
@@ -91,14 +99,16 @@ export function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [user])
 
   function handleCreateTask(title: string) {
-    if (!session) return
+    if (!user) return
 
     setIsTasksBusy(true)
     setTaskError(null)
-    void createTask(session, { title })
+    void user
+      .getIdToken()
+      .then((token) => createTask(token, { title }))
       .then((task) => {
         setTasks((prev) => [task, ...prev])
       })
@@ -111,7 +121,7 @@ export function DashboardPage() {
   }
 
   function handleUpdateTask(nextTask: Task) {
-    if (!session) return
+    if (!user) return
 
     const previousTask = tasks.find((t) => t.id === nextTask.id) ?? null
 
@@ -139,7 +149,9 @@ export function DashboardPage() {
     setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? { ...t, ...localPatch } : t)))
 
     setIsTasksBusy(true)
-    void updateTask(session, nextTask.id, apiPatch)
+    void user
+      .getIdToken()
+      .then((token) => updateTask(token, nextTask.id, apiPatch))
       .then((saved) => {
         setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))
       })
@@ -191,9 +203,9 @@ export function DashboardPage() {
             <span className={styles.planLabel}>{PLAN_LABEL}</span>), and the dashboard only renders what that
             plan enables.
           </p>
-          {session ? (
+          {user?.email ? (
             <p className={styles.userMeta}>
-              Signed in as <strong>{session.email}</strong>
+              Signed in as <strong>{user.email}</strong>
             </p>
           ) : null}
           <nav className={styles.nav}>
@@ -201,8 +213,9 @@ export function DashboardPage() {
               className={styles.navButton}
               type="button"
               onClick={() => {
-                clearAuthSession()
-                navigate('/login')
+                void signOut(auth).finally(() => {
+                  navigate('/login')
+                })
               }}
             >
               Logout
