@@ -1,20 +1,38 @@
-import type { Task, TaskStatus } from '../../types/task'
+import type { Task, TaskPriority, TaskStatus } from '../../types/task'
 import { TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER } from '../../types/task'
+import type { User } from '../../types/user'
 import styles from './KanbanBoard.module.css'
+
+const STATUS_COLUMN_CLASS: Record<TaskStatus, string> = {
+  todo: styles.todoColumn,
+  in_progress: styles.inProgressColumn,
+  blocked: styles.blockedColumn,
+  done: styles.doneColumn,
+}
+
+const PRIORITY_BADGE_CLASS: Record<TaskPriority, string> = {
+  low: styles.priorityLow,
+  medium: styles.priorityMedium,
+  high: styles.priorityHigh,
+  critical: styles.priorityCritical,
+}
 
 type KanbanBoardProps = {
   tasks: Task[]
+  users?: User[]
   onUpdateTask?: (task: Task) => void
 }
 
-export function KanbanBoard({ tasks, onUpdateTask }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, users, onUpdateTask }: KanbanBoardProps) {
+  const usersById = new Map(users?.map((user) => [user.id, user]) ?? [])
+
   return (
     <section className={styles.board} aria-label='Kanban board'>
       {TASK_STATUS_ORDER.map((status) => {
         const columnTasks = tasks.filter((t) => t.status === status)
 
         return (
-          <div key={status} className={styles.column}>
+          <div key={status} className={`${styles.column} ${STATUS_COLUMN_CLASS[status]}`}>
             <header className={styles.columnHeader}>
               <h2 className={styles.columnTitle}>{TASK_STATUS_LABEL[status]}</h2>
               <span className={styles.count}>{columnTasks.length}</span>
@@ -25,8 +43,14 @@ export function KanbanBoard({ tasks, onUpdateTask }: KanbanBoardProps) {
                 <article key={task.id} className={styles.card}>
                   <div className={styles.cardTitle}>{task.title}</div>
                   <div className={styles.cardMeta}>
-                    <span className={styles.badge}>{TASK_PRIORITY_LABEL[task.priority]}</span>
-                    {task.assigneeId ? <span className={styles.badge}>@{task.assigneeId}</span> : null}
+                    <span className={`${styles.badge} ${PRIORITY_BADGE_CLASS[task.priority]}`}>
+                      {TASK_PRIORITY_LABEL[task.priority]}
+                    </span>
+                    {task.assigneeId ? (
+                      <span className={styles.badge}>
+                        {usersById.get(task.assigneeId)?.name ?? task.assigneeId}
+                      </span>
+                    ) : null}
                     {onUpdateTask ? (
                       <select
                         className={styles.statusSelect}
