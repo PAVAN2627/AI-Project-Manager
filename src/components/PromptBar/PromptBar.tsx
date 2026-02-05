@@ -13,7 +13,9 @@ export function PromptBar({ value, isBusy, onChange, onSubmit }: PromptBarProps)
       className={styles.form}
       onSubmit={(e) => {
         e.preventDefault()
-        void onSubmit(value)
+        const trimmed = value.trim()
+        if (!trimmed) return
+        void onSubmit(trimmed)
       }}
     >
       <input

@@ -22,13 +22,18 @@ const DEFAULT_INTENT: IntentInterpretation = {
 }
 
 function toKanbanFilterStatus(status: IntentFilterStatus): Task['status'] | undefined {
-  if (status === 'All') return undefined
-  if (status === 'Blocked') return 'blocked'
-  if (status === 'Done') return 'done'
-
-  const exhaustive: never = status
-  console.warn('Unknown filterStatus from interpret-intent:', exhaustive)
-  return undefined
+  switch (status) {
+    case 'All':
+      return undefined
+    case 'Blocked':
+      return 'blocked'
+    case 'Done':
+      return 'done'
+    default: {
+      const exhaustive: never = status
+      return exhaustive
+    }
+  }
 }
 
 export function DashboardPage() {
@@ -170,18 +175,15 @@ export function DashboardPage() {
           isBusy={isIntentBusy}
           onChange={setPrompt}
           onSubmit={async (rawInput) => {
-            const input = rawInput.trim()
-            if (!input) return
-
             setIsIntentBusy(true)
             setIntentError(null)
-            setHasGeneratedIntent(true)
             try {
-              const nextIntent = await interpretIntent(input)
+              const nextIntent = await interpretIntent(rawInput)
               setIntent(nextIntent)
             } catch (error) {
               setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
             } finally {
+              setHasGeneratedIntent(true)
               setIsIntentBusy(false)
             }
           }}
@@ -240,7 +242,11 @@ export function DashboardPage() {
 
               {intentError && intent ? <p className={styles.planHint}>Showing the last successful plan:</p> : null}
 
-              <pre className={styles.planJson}>{JSON.stringify(intent ?? null, null, 2)}</pre>
+              {intent ? (
+                <pre className={styles.planJson}>{JSON.stringify(intent, null, 2)}</pre>
+              ) : (
+                <p className={styles.planHint}>No successful plan yet.</p>
+              )}
             </section>
           ) : null}
         </section>
