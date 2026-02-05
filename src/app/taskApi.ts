@@ -1,72 +1,86 @@
+import {
+  addDoc,
+  collection,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  updateDoc,
+} from 'firebase/firestore'
+
+import { firestore } from '../firebase/firebase'
 import type { Task, TaskPriority, TaskStatus } from '../types/task'
+
+type FirestoreTask = {
+  title: string
+  status: TaskStatus
+  priority: TaskPriority
+  assignedTo?: string
+  createdAt?: number
+}
 
 const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
 const TASK_PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'critical']
 
-function isTask(value: unknown): value is Task {
+function isFirestoreTask(value: unknown): value is FirestoreTask {
   if (!value || typeof value !== 'object') return false
+
   const maybe = value as {
-    id?: unknown
     title?: unknown
     status?: unknown
     priority?: unknown
-    assigneeId?: unknown
+    assignedTo?: unknown
+    createdAt?: unknown
   }
 
-  if (typeof maybe.id !== 'string' || maybe.id.trim() === '') return false
   if (typeof maybe.title !== 'string' || maybe.title.trim() === '') return false
   if (typeof maybe.status !== 'string' || !TASK_STATUSES.includes(maybe.status as TaskStatus)) return false
   if (typeof maybe.priority !== 'string' || !TASK_PRIORITIES.includes(maybe.priority as TaskPriority)) {
     return false
   }
+  if (maybe.createdAt !== undefined) {
+    if (typeof maybe.createdAt !== 'number' || !Number.isFinite(maybe.createdAt)) return false
+  }
 
-  if (maybe.assigneeId !== undefined) {
-    if (typeof maybe.assigneeId !== 'string') return false
-    if (maybe.assigneeId.trim() === '') return false
+  if (maybe.assignedTo !== undefined) {
+    if (typeof maybe.assignedTo !== 'string') return false
+    if (maybe.assignedTo.trim() === '') return false
   }
 
   return true
 }
 
-function getErrorMessage(data: unknown, fallback: string) {
-  if (data && typeof data === 'object') {
-    const maybe = data as { error?: unknown }
-    if (typeof maybe.error === 'string' && maybe.error.trim() !== '') {
-      return maybe.error
-    }
-  }
-
-  return fallback
-}
-
-function getAuthHeaders(authToken: string) {
+function toTask(id: string, data: FirestoreTask): Task {
   return {
-    authorization: `Bearer ${authToken}`,
+    id,
+    title: data.title,
+    status: data.status,
+    priority: data.priority,
+    assigneeId: data.assignedTo,
   }
 }
 
-export async function getTasks(authToken: string): Promise<Task[]> {
-  const response = await fetch('/api/tasks', {
-    headers: {
-      ...getAuthHeaders(authToken),
-    },
+function getTasksCollection(userId: string) {
+  return collection(firestore, 'users', userId, 'tasks')
+}
+
+export async function getTasks(userId: string): Promise<Task[]> {
+  const tasksSnapshot = await getDocs(query(getTasksCollection(userId), orderBy('createdAt', 'desc')))
+
+  return tasksSnapshot.docs.map((snap) => {
+    const data = snap.data() as unknown
+    if (!isFirestoreTask(data)) {
+      throw new Error('Invalid task document')
+    }
+
+    return toTask(snap.id, data)
   })
-
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
-  }
-
-  const tasksValue = (data as { tasks?: unknown } | null)?.tasks
-  if (!Array.isArray(tasksValue) || !tasksValue.every(isTask)) {
-    throw new Error('Invalid tasks response')
-  }
-
-  return tasksValue
 }
 
 export async function createTask(
-  authToken: string,
+  userId: string,
   body: {
     title: string
     status?: TaskStatus
@@ -74,30 +88,30 @@ export async function createTask(
     assigneeId?: string
   },
 ): Promise<Task> {
-  const response = await fetch('/api/tasks', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...getAuthHeaders(authToken),
-    },
-    body: JSON.stringify(body),
-  })
+  const status: TaskStatus = body.status ?? 'todo'
+  const priority: TaskPriority = body.priority ?? 'medium'
 
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
+  const taskData: FirestoreTask = {
+    title: body.title,
+    status,
+    priority,
+    createdAt: Date.now(),
+    ...(body.assigneeId ? { assignedTo: body.assigneeId } : {}),
   }
 
-  const taskValue = (data as { task?: unknown } | null)?.task
-  if (!isTask(taskValue)) {
-    throw new Error('Invalid task response')
-  }
+  const docRef = await addDoc(getTasksCollection(userId), taskData)
 
-  return taskValue
+  return {
+    id: docRef.id,
+    title: body.title,
+    status,
+    priority,
+    assigneeId: body.assigneeId,
+  }
 }
 
 export async function updateTask(
-  authToken: string,
+  userId: string,
   id: string,
   patch: {
     status?: TaskStatus
@@ -105,24 +119,40 @@ export async function updateTask(
     assigneeId?: string | undefined
   },
 ): Promise<Task> {
-  const response = await fetch(`/api/tasks/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    headers: {
-      'content-type': 'application/json',
-      ...getAuthHeaders(authToken),
-    },
-    body: JSON.stringify(patch),
-  })
+  const taskRef = doc(firestore, 'users', userId, 'tasks', id)
 
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
+  const firestorePatch: Record<string, unknown> = {}
+
+  if (patch.status) {
+    firestorePatch.status = patch.status
   }
 
-  const taskValue = (data as { task?: unknown } | null)?.task
-  if (!isTask(taskValue)) {
-    throw new Error('Invalid task response')
+  if (patch.priority) {
+    firestorePatch.priority = patch.priority
   }
 
-  return taskValue
+  if (patch.assigneeId !== undefined) {
+    const trimmed = patch.assigneeId.trim()
+    firestorePatch.assignedTo = trimmed.length > 0 ? trimmed : deleteField()
+  }
+
+  if (Object.keys(firestorePatch).length === 0) {
+    const existing = await getDoc(taskRef)
+    const existingData = existing.data() as unknown
+    if (!existing.exists() || !isFirestoreTask(existingData)) {
+      throw new Error('Task not found')
+    }
+    return toTask(existing.id, existingData)
+  }
+
+  await updateDoc(taskRef, firestorePatch)
+
+  const updated = await getDoc(taskRef)
+  const updatedData = updated.data() as unknown
+
+  if (!updated.exists() || !isFirestoreTask(updatedData)) {
+    throw new Error('Task not found')
+  }
+
+  return toTask(updated.id, updatedData)
 }

@@ -80,9 +80,7 @@ export function DashboardPage() {
     setIsLoadingTasks(true)
     setTaskError(null)
 
-    void user
-      .getIdToken()
-      .then((token) => getTasks(token))
+    void getTasks(user.uid)
       .then((next) => {
         if (cancelled) return
         setTasks(next)
@@ -106,9 +104,7 @@ export function DashboardPage() {
 
     setIsTasksBusy(true)
     setTaskError(null)
-    void user
-      .getIdToken()
-      .then((token) => createTask(token, { title }))
+    void createTask(user.uid, { title })
       .then((task) => {
         setTasks((prev) => [task, ...prev])
       })
@@ -149,9 +145,7 @@ export function DashboardPage() {
     setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? { ...t, ...localPatch } : t)))
 
     setIsTasksBusy(true)
-    void user
-      .getIdToken()
-      .then((token) => updateTask(token, nextTask.id, apiPatch))
+    void updateTask(user.uid, nextTask.id, apiPatch)
       .then((saved) => {
         setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))
       })
