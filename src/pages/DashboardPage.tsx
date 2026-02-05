@@ -9,10 +9,27 @@ import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssig
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
+import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
+import { interpretIntent } from '../app/intentApi'
 import type { Task } from '../types/task'
-import { useGenerativeUI } from '../tambo/useGenerativeUI'
-import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
+
+const DEFAULT_INTENT: IntentInterpretation = {
+  showKanban: true,
+  filterStatus: 'All',
+  showPrioritySelector: false,
+  showTeamAssignment: false,
+}
+
+function toKanbanFilterStatus(status: IntentFilterStatus): Task['status'] | undefined {
+  if (status === 'All') return undefined
+  if (status === 'Blocked') return 'blocked'
+  if (status === 'Done') return 'done'
+
+  const exhaustive: never = status
+  console.warn('Unknown filterStatus from interpret-intent:', exhaustive)
+  return undefined
+}
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -23,17 +40,21 @@ export function DashboardPage() {
   const [prompt, setPrompt] = useState('')
   const session = useMemo(() => getAuthSession(), [])
 
-  const { plan, isPlanning, defaultPlan } = useGenerativeUI()
-  const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
-  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false)
+  const [isIntentBusy, setIsIntentBusy] = useState(false)
+  const [intentError, setIntentError] = useState<string | null>(null)
+  const [intent, setIntent] = useState<IntentInterpretation | null>(null)
+  const [hasGeneratedIntent, setHasGeneratedIntent] = useState(false)
+
+  const effectiveIntent = intent ?? DEFAULT_INTENT
 
   const visibleTasks = useMemo(() => {
-    if (!activePlan.kanban.enabled) return tasks
-    if (activePlan.kanban.filterStatus) {
-      return tasks.filter((t) => t.status === activePlan.kanban.filterStatus)
+    if (!effectiveIntent.showKanban) return tasks
+    const filterStatus = toKanbanFilterStatus(effectiveIntent.filterStatus)
+    if (filterStatus) {
+      return tasks.filter((t) => t.status === filterStatus)
     }
     return tasks
-  }, [activePlan, tasks])
+  }, [effectiveIntent.filterStatus, effectiveIntent.showKanban, tasks])
 
   useEffect(() => {
     if (!session) return
@@ -146,12 +167,23 @@ export function DashboardPage() {
 
         <PromptBar
           value={prompt}
-          isBusy={isPlanning}
+          isBusy={isIntentBusy}
           onChange={setPrompt}
-          onSubmit={async () => {
-            const nextPlan = await plan(prompt)
-            setActivePlan(nextPlan)
-            setHasGeneratedPlan(true)
+          onSubmit={async (rawInput) => {
+            const input = rawInput.trim()
+            if (!input) return
+
+            setIsIntentBusy(true)
+            setIntentError(null)
+            setHasGeneratedIntent(true)
+            try {
+              const nextIntent = await interpretIntent(input)
+              setIntent(nextIntent)
+            } catch (error) {
+              setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
+            } finally {
+              setIsIntentBusy(false)
+            }
           }}
         />
       </header>
@@ -161,13 +193,13 @@ export function DashboardPage() {
           <div className={styles.placeholder}>
             <p>Loading tasks…</p>
           </div>
-        ) : activePlan.kanban.enabled ? (
+        ) : effectiveIntent.showKanban ? (
           <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
             <p>
-              Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) to
-              simulate a Generative UI plan.
+              Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) and
+              click <strong>Generate Interface</strong>.
             </p>
           </div>
         )}
@@ -181,14 +213,11 @@ export function DashboardPage() {
             }}
           />
 
-          {activePlan.prioritySelector.enabled ? (
-            <PrioritySelector
-              tasks={tasks}
-              onUpdateTask={handleUpdateTask}
-            />
+          {effectiveIntent.showPrioritySelector ? (
+            <PrioritySelector tasks={tasks} onUpdateTask={handleUpdateTask} />
           ) : null}
 
-          {activePlan.teamAssignment.enabled ? (
+          {effectiveIntent.showTeamAssignment ? (
             <TeamAssignmentPanel
               tasks={tasks}
               users={mockUsers}
@@ -196,11 +225,23 @@ export function DashboardPage() {
             />
           ) : null}
 
-          {hasGeneratedPlan ? (
-            <details className={styles.planDetails}>
-              <summary>UI plan (mock Tambo)</summary>
-              <pre className={styles.planJson}>{JSON.stringify(activePlan, null, 2)}</pre>
-            </details>
+          {hasGeneratedIntent ? (
+            <section className={styles.planPanel} aria-label='AI UI Decision Plan'>
+              <header className={styles.planHeader}>
+                <h2 className={styles.planTitle}>AI UI Decision Plan</h2>
+                <p className={styles.planSubtitle}>
+                  Response from <code>/api/interpret-intent</code>
+                </p>
+              </header>
+
+              {intentError ? (
+                <p className={styles.planError}>{intentError}</p>
+              ) : null}
+
+              {intentError && intent ? <p className={styles.planHint}>Showing the last successful plan:</p> : null}
+
+              <pre className={styles.planJson}>{JSON.stringify(intent ?? null, null, 2)}</pre>
+            </section>
           ) : null}
         </section>
       </main>
