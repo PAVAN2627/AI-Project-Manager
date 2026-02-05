@@ -80,7 +80,6 @@ export function DashboardPage() {
       setIsLoadingTasks(false)
       return
     }
-    let hasReceivedSnapshot = false
 
     setIsLoadingTasks(true)
     setTaskError(null)
@@ -89,17 +88,11 @@ export function DashboardPage() {
       user.uid,
       (next) => {
         setTasks(next)
-        if (!hasReceivedSnapshot) {
-          hasReceivedSnapshot = true
-          setIsLoadingTasks(false)
-        }
+        setIsLoadingTasks(false)
       },
       (error) => {
         setTaskError(error.message)
-        if (!hasReceivedSnapshot) {
-          hasReceivedSnapshot = true
-          setIsLoadingTasks(false)
-        }
+        setIsLoadingTasks(false)
       },
     )
 

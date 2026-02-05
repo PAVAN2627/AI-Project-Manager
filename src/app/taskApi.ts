@@ -25,20 +25,16 @@ type FirestoreTaskDoc = {
   createdAt?: Timestamp | null
 }
 
-function normalizeLabel(value: string): string {
-  return value.trim().toLowerCase()
-}
-
 const STATUS_BY_LABEL = new Map<string, TaskStatus>(
-  Object.entries(TASK_STATUS_LABEL).map(([key, label]) => [normalizeLabel(label), key as TaskStatus]),
+  Object.entries(TASK_STATUS_LABEL).map(([key, label]) => [label, key as TaskStatus]),
 )
 
 const PRIORITY_BY_LABEL = new Map<string, TaskPriority>(
-  Object.entries(TASK_PRIORITY_LABEL).map(([key, label]) => [normalizeLabel(label), key as TaskPriority]),
+  Object.entries(TASK_PRIORITY_LABEL).map(([key, label]) => [label, key as TaskPriority]),
 )
 
-const STATUS_LABELS = new Set<string>(Object.values(TASK_STATUS_LABEL).map(normalizeLabel))
-const PRIORITY_LABELS = new Set<string>(Object.values(TASK_PRIORITY_LABEL).map(normalizeLabel))
+const STATUS_LABELS = new Set<string>(Object.values(TASK_STATUS_LABEL))
+const PRIORITY_LABELS = new Set<string>(Object.values(TASK_PRIORITY_LABEL))
 
 function isFirestoreTaskDoc(value: unknown): value is FirestoreTaskDoc {
   if (!value || typeof value !== 'object') return false
@@ -52,8 +48,8 @@ function isFirestoreTaskDoc(value: unknown): value is FirestoreTaskDoc {
   }
 
   if (typeof maybe.title !== 'string' || maybe.title.trim() === '') return false
-  if (typeof maybe.status !== 'string' || !STATUS_LABELS.has(normalizeLabel(maybe.status))) return false
-  if (typeof maybe.priority !== 'string' || !PRIORITY_LABELS.has(normalizeLabel(maybe.priority))) return false
+  if (typeof maybe.status !== 'string' || !STATUS_LABELS.has(maybe.status)) return false
+  if (typeof maybe.priority !== 'string' || !PRIORITY_LABELS.has(maybe.priority)) return false
 
   if (maybe.assignedTo !== undefined) {
     if (typeof maybe.assignedTo !== 'string') return false
@@ -67,19 +63,17 @@ function isFirestoreTaskDoc(value: unknown): value is FirestoreTaskDoc {
   return true
 }
 
-function toTask(id: string, data: FirestoreTaskDoc): Task {
-  const normalizedStatus = normalizeLabel(data.status)
-  const normalizedPriority = normalizeLabel(data.priority)
+function toTask(id: string, data: FirestoreTaskDoc): Task | null {
+  const status = STATUS_BY_LABEL.get(data.status)
+  const priority = PRIORITY_BY_LABEL.get(data.priority)
 
-  const status = STATUS_BY_LABEL.get(normalizedStatus)
-  const priority = PRIORITY_BY_LABEL.get(normalizedPriority)
-
-  if (!status) {
-    console.warn(`[firestore] Unknown task status label (${id}): ${data.status}`)
-  }
-
-  if (!priority) {
-    console.warn(`[firestore] Unknown task priority label (${id}): ${data.priority}`)
+  if (!status || !priority) {
+    console.error('[firestore] Invalid task state', {
+      id,
+      status: data.status,
+      priority: data.priority,
+    })
+    return null
   }
 
   const assigneeId = data.assignedTo?.trim().length ? data.assignedTo.trim() : undefined
@@ -87,8 +81,8 @@ function toTask(id: string, data: FirestoreTaskDoc): Task {
   return {
     id,
     title: data.title,
-    status: status ?? 'todo',
-    priority: priority ?? 'medium',
+    status,
+    priority,
     assigneeId,
   }
 }
@@ -102,7 +96,10 @@ function mapDocsToTasks(docs: QueryDocumentSnapshot<DocumentData>[]): Task[] {
       console.warn(`[firestore] Invalid task document shape: ${docSnap.id}`)
       continue
     }
-    tasks.push(toTask(docSnap.id, data))
+    const task = toTask(docSnap.id, data)
+    if (task) {
+      tasks.push(task)
+    }
   }
 
   return tasks
@@ -178,12 +175,8 @@ export async function updateTask(
   }
 
   if (patch.assigneeId !== undefined) {
-    const normalizedAssignee = patch.assigneeId === null ? null : patch.assigneeId.trim()
-    if (normalizedAssignee === null || normalizedAssignee.length === 0) {
-      updates.assignedTo = deleteField()
-    } else {
-      updates.assignedTo = normalizedAssignee
-    }
+    const trimmed = patch.assigneeId?.trim() ?? ''
+    updates.assignedTo = trimmed.length === 0 ? deleteField() : trimmed
   }
 
   if (Object.keys(updates).length === 0) return
