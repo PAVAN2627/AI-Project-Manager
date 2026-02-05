@@ -1,11 +1,13 @@
+export const INTENT_FILTER_STATUSES = ['All', 'Blocked', 'Done'] as const
+
+export type IntentFilterStatus = (typeof INTENT_FILTER_STATUSES)[number]
+
 export type IntentInterpretation = {
   showKanban: boolean
-  filterStatus: 'All' | 'Blocked' | 'Done'
+  filterStatus: IntentFilterStatus
   showPrioritySelector: boolean
   showTeamAssignment: boolean
 }
-
-const FILTER_STATUSES: IntentInterpretation['filterStatus'][] = ['All', 'Blocked', 'Done']
 
 function isIntentInterpretation(value: unknown): value is IntentInterpretation {
   if (!value || typeof value !== 'object') return false
@@ -21,7 +23,7 @@ function isIntentInterpretation(value: unknown): value is IntentInterpretation {
   if (typeof maybe.showPrioritySelector !== 'boolean') return false
   if (typeof maybe.showTeamAssignment !== 'boolean') return false
   if (typeof maybe.filterStatus !== 'string') return false
-  if (!FILTER_STATUSES.includes(maybe.filterStatus as IntentInterpretation['filterStatus'])) return false
+  if (!INTENT_FILTER_STATUSES.includes(maybe.filterStatus as IntentFilterStatus)) return false
 
   return true
 }

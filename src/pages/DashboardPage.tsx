@@ -8,7 +8,7 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
-import type { IntentInterpretation } from '../app/intentApi'
+import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
 import { interpretIntent } from '../app/intentApi'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
 import type { Task } from '../types/task'
@@ -21,13 +21,23 @@ const DEFAULT_PLAN: UIPlan = {
   teamAssignment: { enabled: false },
 }
 
+function toKanbanFilterStatus(status: IntentFilterStatus): UIPlan['kanban']['filterStatus'] {
+  switch (status) {
+    case 'All':
+      return undefined
+    case 'Blocked':
+      return 'blocked'
+    case 'Done':
+      return 'done'
+    default: {
+      const exhaustive: never = status
+      return exhaustive
+    }
+  }
+}
+
 function toUIPlan(intent: IntentInterpretation): UIPlan {
-  const filterStatus =
-    intent.filterStatus === 'Blocked'
-      ? 'blocked'
-      : intent.filterStatus === 'Done'
-        ? 'done'
-        : undefined
+  const filterStatus = toKanbanFilterStatus(intent.filterStatus)
 
   return {
     kanban: {
@@ -52,7 +62,7 @@ export function DashboardPage() {
   const session = useMemo(() => getAuthSession(), [])
 
   const [activePlan, setActivePlan] = useState<UIPlan>(DEFAULT_PLAN)
-  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false)
+  const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
   const visibleTasks = useMemo(() => {
     if (!activePlan.kanban.enabled) return tasks
@@ -180,16 +190,14 @@ export function DashboardPage() {
             if (!trimmed) return
 
             setIntentError(null)
+            setHasAttemptedIntent(true)
             setIsInterpretingIntent(true)
             try {
               const nextIntent = await interpretIntent(trimmed)
               setIntent(nextIntent)
               setActivePlan(toUIPlan(nextIntent))
-              setHasGeneratedPlan(true)
             } catch (error) {
-              setIntent(null)
               setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
-              setHasGeneratedPlan(true)
             } finally {
               setIsInterpretingIntent(false)
             }
@@ -206,7 +214,9 @@ export function DashboardPage() {
           <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
-            {hasGeneratedPlan ? (
+            {intentError ? (
+              <p>{intentError}</p>
+            ) : hasAttemptedIntent ? (
               <p>Kanban board is hidden based on the AI decision plan.</p>
             ) : (
               <p>
@@ -241,15 +251,12 @@ export function DashboardPage() {
             />
           ) : null}
 
-          {hasGeneratedPlan ? (
+          {hasAttemptedIntent ? (
             <details className={styles.planDetails} open>
               <summary>AI UI Decision Plan</summary>
               <pre className={styles.planJson}>
-                {intentError
-                  ? intentError
-                  : intent
-                    ? JSON.stringify(intent, null, 2)
-                    : 'No plan generated yet.'}
+                {intentError ? `Error: ${intentError}\n\n` : ''}
+                {intent ? JSON.stringify(intent, null, 2) : 'No plan generated yet.'}
               </pre>
             </details>
           ) : null}
