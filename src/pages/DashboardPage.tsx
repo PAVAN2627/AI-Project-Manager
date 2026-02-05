@@ -179,9 +179,16 @@ export function DashboardPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
+        <div className={styles.headerIntro}>
           <h1 className={styles.title}>AI Project Manager</h1>
-          <p className={styles.subtitle}>Vite + React scaffold with a Tambo adapter boundary</p>
+          <p className={styles.subtitle}>
+            Prompt-driven UI: describe what you want to see, and the interface adapts from an AI decision plan.
+          </p>
+          <p className={styles.whyText}>
+            <strong>Why this UI?</strong> It keeps the demo transparent: your prompt becomes a small JSON plan
+            (shown in <em>AI UI Decision Plan</em>), and only the relevant tools (Kanban, priority, team
+            assignment) are enabled.
+          </p>
           {session ? (
             <p className={styles.userMeta}>
               Signed in as <strong>{session.email}</strong>
