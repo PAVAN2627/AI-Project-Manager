@@ -14,8 +14,28 @@
   padding: 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   min-height: 240px;
+}
+
+.todoColumn {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.inProgressColumn {
+  background: rgba(168, 85, 247, 0.09);
+  border-color: rgba(168, 85, 247, 0.18);
+}
+
+.blockedColumn {
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.2);
+}
+
+.doneColumn {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.18);
 }
 
 .columnHeader {
@@ -75,6 +95,26 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
+}
+
+.priorityLow {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.priorityMedium {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.22);
+}
+
+.priorityHigh {
+  background: rgba(251, 146, 60, 0.12);
+  border-color: rgba(251, 146, 60, 0.22);
+}
+
+.priorityCritical {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.22);
 }
 
 .statusSelect {

@@ -162,7 +162,7 @@ export function DashboardPage() {
             <p>Loading tasks…</p>
           </div>
         ) : activePlan.kanban.enabled ? (
-          <KanbanBoard tasks={visibleTasks} onUpdateTask={handleUpdateTask} />
+          <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
             <p>
