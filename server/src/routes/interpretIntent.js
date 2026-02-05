@@ -1,10 +1,8 @@
 import { Router } from 'express'
 
-import { interpretIntentFromPrompt } from '../services/azureOpenAIIntentService.js'
+import { interpretIntentFromPrompt, MAX_PROMPT_LENGTH } from '../services/azureOpenAIIntentService.js'
 
 export const interpretIntentRouter = Router()
-
-const MAX_INPUT_LENGTH = 4_000
 
 function normalizeInput(value) {
   if (typeof value !== 'string') return null
@@ -24,8 +22,8 @@ async function handleInterpretIntent(req, res) {
     return
   }
 
-  if (typeof rawInput === 'string' && rawInput.trim().length > MAX_INPUT_LENGTH) {
-    res.status(413).json({ error: `Input too long (max ${MAX_INPUT_LENGTH} characters)` })
+  if (input.length > MAX_PROMPT_LENGTH) {
+    res.status(413).json({ error: `Input too long (max ${MAX_PROMPT_LENGTH} characters)` })
     return
   }
 
