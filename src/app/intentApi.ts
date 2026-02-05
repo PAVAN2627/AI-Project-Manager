@@ -30,8 +30,7 @@ function parseIntentFilterStatus(value: unknown): IntentFilterStatus | null {
   return null
 }
 
-function parseIntentInterpretation(value: unknown): IntentInterpretation | null {
-  if (!value || typeof value !== 'object') return null
+function parseIntentInterpretation(value: unknown): IntentInterpretation {
   const maybe = value as {
     showKanban?: unknown
     filterStatus?: unknown
@@ -104,10 +103,9 @@ export async function interpretIntent(input: string): Promise<IntentInterpretati
     throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
   }
 
-  const intent = parseIntentInterpretation(data)
-  if (!intent) {
+  if (!data || typeof data !== 'object') {
     throw new Error('Invalid intent response')
   }
 
-  return intent
+  return parseIntentInterpretation(data)
 }
