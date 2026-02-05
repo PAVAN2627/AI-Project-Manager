@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { signOut } from 'firebase/auth'
@@ -63,6 +63,14 @@ export function DashboardPage() {
   const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
   const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
+  const getAuthToken = useCallback(async () => {
+    if (!user) {
+      throw new Error('Not signed in')
+    }
+
+    return user.getIdToken()
+  }, [user])
+
   const visibleTasks = useMemo(() => {
     if (!activePlan.kanban.enabled) return tasks
     if (activePlan.kanban.filterStatus) {
@@ -78,8 +86,7 @@ export function DashboardPage() {
     setIsLoadingTasks(true)
     setTaskError(null)
 
-    void user
-      .getIdToken()
+    void getAuthToken()
       .then((token) => getTasks(token))
       .then((next) => {
         if (cancelled) return
@@ -97,15 +104,14 @@ export function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [getAuthToken, user])
 
   function handleCreateTask(title: string) {
     if (!user) return
 
     setIsTasksBusy(true)
     setTaskError(null)
-    void user
-      .getIdToken()
+    void getAuthToken()
       .then((token) => createTask(token, { title }))
       .then((task) => {
         setTasks((prev) => [task, ...prev])
@@ -147,8 +153,7 @@ export function DashboardPage() {
     setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? { ...t, ...localPatch } : t)))
 
     setIsTasksBusy(true)
-    void user
-      .getIdToken()
+    void getAuthToken()
       .then((token) => updateTask(token, nextTask.id, apiPatch))
       .then((saved) => {
         setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))

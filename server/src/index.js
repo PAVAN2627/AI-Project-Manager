@@ -17,6 +17,12 @@ if (!isProduction) {
   dotenv.config({ path: '.env' })
 }
 
+if (isProduction && process.env.ACCEPT_UNVERIFIED_FIREBASE_TOKENS === 'true') {
+  throw new Error(
+    'ACCEPT_UNVERIFIED_FIREBASE_TOKENS must never be enabled in production (unsafe JWT handling).'
+  )
+}
+
 const defaultCorsOrigin = isProduction
   ? false
   : /^http:\/\/(localhost|127\.0\.0\.1):\d+$/

@@ -74,14 +74,15 @@ function getOwnerEmailFromToken(token) {
   if (session) return session.email
 
   // Hackathon-only behavior: accept a Firebase ID token and derive the owner identity from its payload.
-  // This does NOT validate the JWT signature; only enabled outside production.
-  if (process.env.NODE_ENV !== 'production') {
+  // This does NOT validate the JWT signature; only enabled outside production and when explicitly opted in.
+  const acceptUnverifiedFirebaseTokens = process.env.ACCEPT_UNVERIFIED_FIREBASE_TOKENS === 'true'
+  if (process.env.NODE_ENV !== 'production' && acceptUnverifiedFirebaseTokens) {
     const emailFromJwt = getEmailFromJwt(token)
     if (emailFromJwt) {
       if (!hasWarnedAboutUnverifiedFirebaseTokens) {
         hasWarnedAboutUnverifiedFirebaseTokens = true
         console.warn(
-          '[auth] Accepting Firebase ID tokens without signature verification (non-production only).'
+          '[auth] UNSAFE: accepting Firebase ID tokens without signature verification (enabled via ACCEPT_UNVERIFIED_FIREBASE_TOKENS).'
         )
       }
 
