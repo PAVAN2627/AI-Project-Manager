@@ -7,26 +7,50 @@
 .header {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 24px;
+  padding: 28px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.headerIntro {
+  flex: 1;
+  min-width: 280px;
+  max-width: 680px;
+}
+
+@media (max-width: 900px) {
+  .headerIntro {
+    max-width: 100%;
+  }
+}
+
 .title {
-  font-size: 20px;
+  font-size: 22px;
   margin: 0;
 }
 
 .subtitle {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
+  line-height: 1.45;
   color: rgba(234, 240, 255, 0.75);
 }
 
-.userMeta {
+.whyText {
   margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(234, 240, 255, 0.82);
+}
+
+.planLabel {
+  color: rgba(234, 240, 255, 0.9);
+}
+
+.userMeta {
+  margin: 12px 0 0;
   font-size: 13px;
   color: rgba(234, 240, 255, 0.85);
 }
@@ -64,8 +88,8 @@
 .main {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 16px;
-  padding: 16px 24px 32px;
+  gap: 20px;
+  padding: 20px 24px 36px;
   align-items: start;
 }
 
@@ -78,7 +102,7 @@
 .sidePanel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .placeholder {
@@ -86,6 +110,11 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.placeholder p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .placeholder code {
@@ -103,9 +132,21 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.planDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: rgba(234, 240, 255, 0.92);
+}
+
 .planJson {
   margin: 10px 0 0;
+  padding: 10px;
   font-size: 12px;
+  line-height: 1.5;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-height: min(280px, 40vh);
   overflow: auto;
 }
 

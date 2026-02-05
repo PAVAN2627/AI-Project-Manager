@@ -24,6 +24,8 @@ const INITIAL_PLAN: UIPlan = {
   teamAssignment: { enabled: false },
 }
 
+const PLAN_LABEL = 'AI UI Decision Plan'
+
 const KANBAN_FILTER_STATUS_MAP: Record<IntentFilterStatus, UIPlan['kanban']['filterStatus']> = {
   All: undefined,
   Blocked: 'blocked',
@@ -191,9 +193,16 @@ export function DashboardPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
+        <div className={styles.headerIntro}>
           <h1 className={styles.title}>AI Project Manager</h1>
-          <p className={styles.subtitle}>Vite + React scaffold with a Tambo adapter boundary</p>
+          <p className={styles.subtitle}>
+            Prompt-driven UI: describe what you want to see, and the interface adapts from an AI decision plan.
+          </p>
+          <p className={styles.whyText}>
+            <strong>Why this UI?</strong> For transparency. Your prompt becomes a small JSON plan (shown in{' '}
+            <span className={styles.planLabel}>{PLAN_LABEL}</span>), and the dashboard only renders what that
+            plan enables.
+          </p>
           {user?.email ? (
             <p className={styles.userMeta}>
               Signed in as <strong>{user.email}</strong>
@@ -276,7 +285,7 @@ export function DashboardPage() {
                 setIsPlanDetailsOpen(e.currentTarget.open)
               }}
             >
-              <summary>AI UI Decision Plan</summary>
+              <summary>{PLAN_LABEL}</summary>
               {intentError ? <p className={styles.planError}>{intentError}</p> : null}
               {intent ? (
                 <pre className={styles.planJson}>{JSON.stringify(intent, null, 2)}</pre>
