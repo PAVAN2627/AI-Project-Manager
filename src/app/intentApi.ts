@@ -1,4 +1,4 @@
-export const INTENT_FILTER_STATUSES = ['All', 'Blocked', 'Done'] as const
+export const INTENT_FILTER_STATUSES = ['All', 'Todo', 'In Progress', 'Blocked', 'Done'] as const
 
 export type IntentFilterStatus = (typeof INTENT_FILTER_STATUSES)[number]
 

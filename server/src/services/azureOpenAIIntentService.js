@@ -43,6 +43,21 @@ function normalizeFilterStatus(value) {
   if (!normalized) return 'All'
   if (normalized === 'all' || normalized === 'any' || normalized === 'everything') return 'All'
 
+  if (normalized === 'todo' || normalized === 'to do' || normalized === 'to-do' || normalized === 'backlog') {
+    return 'Todo'
+  }
+
+  if (
+    normalized === 'in progress' ||
+    normalized === 'in-progress' ||
+    normalized === 'inprogress' ||
+    normalized === 'wip' ||
+    normalized === 'working' ||
+    normalized === 'ongoing'
+  ) {
+    return 'In Progress'
+  }
+
   if (
     normalized === 'done' ||
     normalized === 'completed' ||
@@ -67,6 +82,10 @@ function normalizeBoolean(value, fallback) {
 function fallbackInterpret(prompt) {
   const hasDone = /(\bdone\b|\bcompleted\b|\bfinished\b)/i.test(prompt)
   const hasBlocked = /(\bblocked\b|\bstuck\b|\bimpeded\b)/i.test(prompt)
+  const hasInProgress = /(\bin\s+progress\b|\bin-progress\b|\binprogress\b|\bwip\b|\bworking\s+on\b)/i.test(
+    prompt,
+  )
+  const hasTodo = /(\btodo\b|\bto\s+do\b|\bbacklog\b)/i.test(prompt)
   const hideKanban = /(\bhide\b|\bwithout\b|\bno\b).*(\bkanban\b|\bboard\b)/i.test(prompt)
 
   const showPrioritySelector = /(\bpriority\b|\bpriorities\b|\bprioritize\b)/i.test(prompt)
@@ -76,7 +95,15 @@ function fallbackInterpret(prompt) {
 
   return {
     showKanban: !hideKanban,
-    filterStatus: hasDone ? 'Done' : hasBlocked ? 'Blocked' : 'All',
+    filterStatus: hasDone
+      ? 'Done'
+      : hasBlocked
+        ? 'Blocked'
+        : hasInProgress
+          ? 'In Progress'
+          : hasTodo
+            ? 'Todo'
+            : 'All',
     showPrioritySelector,
     showTeamAssignment,
   }
@@ -86,11 +113,19 @@ function normalizeIntent(raw, prompt) {
   const fallback = fallbackInterpret(prompt)
   if (!raw || typeof raw !== 'object') return fallback
 
+  const maybe = raw
+
+  let filterStatus = fallback.filterStatus
+  if (typeof maybe.filterStatus === 'string') {
+    const normalized = normalizeFilterStatus(maybe.filterStatus)
+    filterStatus = normalized === 'All' && fallback.filterStatus !== 'All' ? fallback.filterStatus : normalized
+  }
+
   return {
-    showKanban: normalizeBoolean(raw.showKanban, fallback.showKanban),
-    filterStatus: normalizeFilterStatus(raw.filterStatus),
-    showPrioritySelector: normalizeBoolean(raw.showPrioritySelector, fallback.showPrioritySelector),
-    showTeamAssignment: normalizeBoolean(raw.showTeamAssignment, fallback.showTeamAssignment),
+    showKanban: normalizeBoolean(maybe.showKanban, fallback.showKanban),
+    filterStatus,
+    showPrioritySelector: normalizeBoolean(maybe.showPrioritySelector, fallback.showPrioritySelector),
+    showTeamAssignment: normalizeBoolean(maybe.showTeamAssignment, fallback.showTeamAssignment),
   }
 }
 
@@ -106,9 +141,11 @@ export async function interpretIntentFromPrompt({ prompt }) {
       content: [
         'You are an intent parser for a task dashboard UI.',
         'Return ONLY a JSON object (no markdown, no code fences) with this exact shape:',
-        '{ "showKanban": boolean, "filterStatus": "Done"|"Blocked"|"All", "showPrioritySelector": boolean, "showTeamAssignment": boolean }',
+        '{ "showKanban": boolean, "filterStatus": "Todo"|"In Progress"|"Blocked"|"Done"|"All", "showPrioritySelector": boolean, "showTeamAssignment": boolean }',
         'Rules:',
-        '- filterStatus must be exactly one of: Done, Blocked, All.',
+        '- filterStatus must be exactly one of: Todo, In Progress, Blocked, Done, All.',
+        '- Treat todo/to do/backlog as Todo.',
+        '- Treat in progress/in-progress/inprogress as In Progress.',
         '- Treat done/completed/finished as Done.',
         '- Treat blocked/stuck/impeded as Blocked.',
         '- If the user asks to hide or not show the kanban/board, set showKanban=false.',
