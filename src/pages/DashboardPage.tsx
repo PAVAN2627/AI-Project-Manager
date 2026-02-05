@@ -54,7 +54,7 @@ export function DashboardPage() {
       return tasks.filter((t) => t.status === filterStatus)
     }
     return tasks
-  }, [effectiveIntent.filterStatus, effectiveIntent.showKanban, tasks])
+  }, [effectiveIntent, tasks])
 
   useEffect(() => {
     if (!session) return
@@ -170,7 +170,6 @@ export function DashboardPage() {
           isBusy={isIntentBusy}
           onChange={setPrompt}
           onSubmit={async (rawInput) => {
-            if (!rawInput) return
             setIsIntentBusy(true)
             setIntentError(null)
             try {
@@ -196,7 +195,10 @@ export function DashboardPage() {
         ) : (
           <div className={styles.placeholder}>
             <p>
-              Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) and
+              Kanban is hidden by the current AI intent.
+            </p>
+            <p>
+              Update your prompt above (example: <code>Show me blocked tasks and assign priorities</code>) and
               click <strong>Generate Interface</strong>.
             </p>
           </div>

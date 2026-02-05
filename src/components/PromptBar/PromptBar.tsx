@@ -4,7 +4,7 @@ type PromptBarProps = {
   value: string
   isBusy?: boolean
   onChange: (value: string) => void
-  onSubmit: (value?: string) => void | Promise<void>
+  onSubmit: (value: string) => void | Promise<void>
 }
 
 export function PromptBar({ value, isBusy, onChange, onSubmit }: PromptBarProps) {
