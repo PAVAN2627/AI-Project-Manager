@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/src/index.js"
+    "server": "node server/src/index.js",
+    "start": "node server/src/index.js"
   },
   "dependencies": {
     "@tambo-ai/react": "^0.73.1",
