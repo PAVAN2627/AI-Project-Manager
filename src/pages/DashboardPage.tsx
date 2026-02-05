@@ -15,25 +15,20 @@ import type { Task } from '../types/task'
 import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
 
-const DEFAULT_PLAN: UIPlan = {
+const INITIAL_PLAN: UIPlan = {
   kanban: { enabled: true },
   prioritySelector: { enabled: false },
   teamAssignment: { enabled: false },
 }
 
+const KANBAN_FILTER_STATUS_MAP: Record<IntentFilterStatus, UIPlan['kanban']['filterStatus']> = {
+  All: undefined,
+  Blocked: 'blocked',
+  Done: 'done',
+}
+
 function toKanbanFilterStatus(status: IntentFilterStatus): UIPlan['kanban']['filterStatus'] {
-  switch (status) {
-    case 'All':
-      return undefined
-    case 'Blocked':
-      return 'blocked'
-    case 'Done':
-      return 'done'
-    default: {
-      const exhaustive: never = status
-      return exhaustive
-    }
-  }
+  return KANBAN_FILTER_STATUS_MAP[status]
 }
 
 function toUIPlan(intent: IntentInterpretation): UIPlan {
@@ -42,7 +37,7 @@ function toUIPlan(intent: IntentInterpretation): UIPlan {
   return {
     kanban: {
       enabled: intent.showKanban,
-      ...(filterStatus ? { filterStatus } : {}),
+      filterStatus,
     },
     prioritySelector: { enabled: intent.showPrioritySelector },
     teamAssignment: { enabled: intent.showTeamAssignment },
@@ -59,9 +54,10 @@ export function DashboardPage() {
   const [intent, setIntent] = useState<IntentInterpretation | null>(null)
   const [intentError, setIntentError] = useState<string | null>(null)
   const [isInterpretingIntent, setIsInterpretingIntent] = useState(false)
+  const [isPlanDetailsOpen, setIsPlanDetailsOpen] = useState(false)
   const session = useMemo(() => getAuthSession(), [])
 
-  const [activePlan, setActivePlan] = useState<UIPlan>(DEFAULT_PLAN)
+  const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
   const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
   const visibleTasks = useMemo(() => {
@@ -156,6 +152,32 @@ export function DashboardPage() {
       })
   }
 
+  async function handleGenerateInterface(rawInput: string) {
+    const trimmed = rawInput.trim()
+    if (!trimmed) {
+      setIntentError('Please enter a prompt before generating an interface.')
+      setHasAttemptedIntent(true)
+      setIsPlanDetailsOpen(true)
+      return
+    }
+
+    setIntentError(null)
+    setHasAttemptedIntent(true)
+    setIsPlanDetailsOpen(true)
+    setIsInterpretingIntent(true)
+    try {
+      const nextIntent = await interpretIntent(trimmed)
+      setIntent(nextIntent)
+      setActivePlan(toUIPlan(nextIntent))
+    } catch (error) {
+      setIntent(null)
+      setActivePlan(INITIAL_PLAN)
+      setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
+    } finally {
+      setIsInterpretingIntent(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -185,23 +207,7 @@ export function DashboardPage() {
           value={prompt}
           isBusy={isInterpretingIntent}
           onChange={setPrompt}
-          onSubmit={async () => {
-            const trimmed = prompt.trim()
-            if (!trimmed) return
-
-            setIntentError(null)
-            setHasAttemptedIntent(true)
-            setIsInterpretingIntent(true)
-            try {
-              const nextIntent = await interpretIntent(trimmed)
-              setIntent(nextIntent)
-              setActivePlan(toUIPlan(nextIntent))
-            } catch (error) {
-              setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
-            } finally {
-              setIsInterpretingIntent(false)
-            }
-          }}
+          onSubmit={handleGenerateInterface}
         />
       </header>
 
@@ -215,7 +221,7 @@ export function DashboardPage() {
         ) : (
           <div className={styles.placeholder}>
             {intentError ? (
-              <p>{intentError}</p>
+              <p className={styles.planError}>{intentError}</p>
             ) : hasAttemptedIntent ? (
               <p>Kanban board is hidden based on the AI decision plan.</p>
             ) : (
@@ -252,12 +258,20 @@ export function DashboardPage() {
           ) : null}
 
           {hasAttemptedIntent ? (
-            <details className={styles.planDetails} open>
+            <details
+              className={styles.planDetails}
+              open={isPlanDetailsOpen}
+              onToggle={(e) => {
+                setIsPlanDetailsOpen(e.currentTarget.open)
+              }}
+            >
               <summary>AI UI Decision Plan</summary>
-              <pre className={styles.planJson}>
-                {intentError ? `Error: ${intentError}\n\n` : ''}
-                {intent ? JSON.stringify(intent, null, 2) : 'No plan generated yet.'}
-              </pre>
+              {intentError ? <p className={styles.planError}>{intentError}</p> : null}
+              {intent ? (
+                <pre className={styles.planJson}>{JSON.stringify(intent, null, 2)}</pre>
+              ) : intentError ? null : (
+                <pre className={styles.planJson}>No plan generated yet.</pre>
+              )}
             </details>
           ) : null}
         </section>
