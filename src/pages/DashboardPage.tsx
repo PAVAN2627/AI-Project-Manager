@@ -9,17 +9,11 @@ import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssig
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
+import { DEFAULT_INTENT } from '../app/intentApi'
 import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
 import { interpretIntent } from '../app/intentApi'
 import type { Task } from '../types/task'
 import styles from './DashboardPage.module.css'
-
-const DEFAULT_INTENT: IntentInterpretation = {
-  showKanban: true,
-  filterStatus: 'All',
-  showPrioritySelector: false,
-  showTeamAssignment: false,
-}
 
 function toKanbanFilterStatus(status: IntentFilterStatus): Task['status'] | undefined {
   switch (status) {
@@ -176,6 +170,7 @@ export function DashboardPage() {
           isBusy={isIntentBusy}
           onChange={setPrompt}
           onSubmit={async (rawInput) => {
+            if (!rawInput) return
             setIsIntentBusy(true)
             setIntentError(null)
             try {

@@ -7,6 +7,13 @@ export type IntentInterpretation = {
   showTeamAssignment: boolean
 }
 
+export const DEFAULT_INTENT: Readonly<IntentInterpretation> = Object.freeze({
+  showKanban: true,
+  filterStatus: 'All',
+  showPrioritySelector: false,
+  showTeamAssignment: false,
+})
+
 function parseIntentFilterStatus(value: unknown): IntentFilterStatus | null {
   if (typeof value !== 'string') return null
   const normalized = value.trim().toLowerCase()
@@ -32,18 +39,22 @@ function parseIntentInterpretation(value: unknown): IntentInterpretation | null 
     showTeamAssignment?: unknown
   }
 
-  const filterStatus = parseIntentFilterStatus(maybe.filterStatus)
-  if (!filterStatus) return null
-  if (typeof maybe.showKanban !== 'boolean') return null
-  if (typeof maybe.showPrioritySelector !== 'boolean') return null
-  if (typeof maybe.showTeamAssignment !== 'boolean') return null
+  const filterStatus = parseIntentFilterStatus(maybe.filterStatus) ?? DEFAULT_INTENT.filterStatus
 
   return {
-    showKanban: maybe.showKanban,
+    showKanban: typeof maybe.showKanban === 'boolean' ? maybe.showKanban : DEFAULT_INTENT.showKanban,
     filterStatus,
-    showPrioritySelector: maybe.showPrioritySelector,
-    showTeamAssignment: maybe.showTeamAssignment,
+    showPrioritySelector:
+      typeof maybe.showPrioritySelector === 'boolean' ? maybe.showPrioritySelector : DEFAULT_INTENT.showPrioritySelector,
+    showTeamAssignment:
+      typeof maybe.showTeamAssignment === 'boolean' ? maybe.showTeamAssignment : DEFAULT_INTENT.showTeamAssignment,
   }
+}
+
+function sanitizeErrorMessage(message: string) {
+  const singleLine = message.replace(/\s+/g, ' ').trim()
+  if (singleLine.length <= 200) return singleLine
+  return `${singleLine.slice(0, 199)}…`
 }
 
 function getErrorMessage(data: unknown, fallback: string) {
@@ -51,7 +62,7 @@ function getErrorMessage(data: unknown, fallback: string) {
     const maybe = data as { error?: unknown; errors?: unknown }
 
     if (typeof maybe.error === 'string' && maybe.error.trim() !== '') {
-      return maybe.error
+      return sanitizeErrorMessage(maybe.error)
     }
 
     if (Array.isArray(maybe.errors)) {
@@ -68,7 +79,7 @@ function getErrorMessage(data: unknown, fallback: string) {
         .slice(0, 3)
 
       if (messages.length > 0) {
-        return messages.join('; ')
+        return sanitizeErrorMessage(messages.join('; '))
       }
     }
   }
