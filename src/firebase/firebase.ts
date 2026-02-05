@@ -1,5 +1,5 @@
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, type Auth } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, setPersistence, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 
 import { firebaseConfig, isFirebaseConfigured } from './firebaseConfig'
@@ -25,6 +25,11 @@ export const firebaseApp: FirebaseApp = getApps().length
 warnIfUsingDemoConfig()
 
 export const auth: Auth = getAuth(firebaseApp)
+
+void setPersistence(auth, browserLocalPersistence).catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : 'Unknown error'
+  console.warn(`[firebase] Failed to set auth persistence: ${message}`)
+})
 export const firestore: Firestore = getFirestore(firebaseApp)
 
 export const db = firestore
