@@ -4,7 +4,50 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>vite-app</title>
+    <title>AI Project Manager - The UI Strikes Back</title>
+    <meta name="description" content="AI-Powered Project Management with Dynamic Interfaces" />
+    <meta name="author" content="AI Project Manager Team" />
+
+    <meta property="og:title" content="AI Project Manager" />
+    <meta property="og:description" content="Transform your workflow with AI-driven interfaces" />
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@AIProjectManager" />
+    
+    <!-- Tailwind CSS CDN for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'background': 'hsl(228 33% 8%)',
+              'foreground': 'hsl(210 40% 98%)',
+              'primary': 'hsl(217 91% 60%)',
+              'secondary': 'hsl(262 83% 58%)',
+              'accent': 'hsl(330 81% 60%)',
+              'muted': 'hsl(228 20% 18%)',
+              'muted-foreground': 'hsl(215 20% 65%)',
+              'success': 'hsl(142 76% 36%)',
+              'warning': 'hsl(38 92% 50%)',
+              'destructive': 'hsl(0 84% 60%)'
+            },
+            backgroundImage: {
+              'gradient-hero': 'linear-gradient(135deg, hsl(228 33% 6%) 0%, hsl(228 30% 12%) 50%, hsl(270 30% 15%) 100%)',
+              'gradient-primary': 'linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%))',
+              'gradient-radial': 'radial-gradient(circle at 25% 25%, hsl(262 83% 58% / 0.15) 0%, transparent 50%), radial-gradient(circle at 75% 75%, hsl(217 91% 60% / 0.15) 0%, transparent 50%)'
+            },
+            animation: {
+              'float': 'float 3s ease-in-out infinite',
+              'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+              'fade-in': 'fadeIn 1s ease-out',
+              'slide-in-right': 'slideInRight 0.5s ease-out'
+            }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

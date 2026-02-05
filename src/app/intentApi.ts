@@ -1,3 +1,5 @@
+import { interpretIntentLocally } from './localIntentService'
+
 export const INTENT_FILTER_STATUSES = ['All', 'Todo', 'In Progress', 'Blocked', 'Done'] as const
 
 export type IntentFilterStatus = (typeof INTENT_FILTER_STATUSES)[number]
@@ -7,117 +9,11 @@ export type IntentInterpretation = {
   filterStatus: IntentFilterStatus
   showPrioritySelector: boolean
   showTeamAssignment: boolean
-}
-
-const INTENT_FILTER_STATUS_BY_NORMALIZED = Object.fromEntries(
-  INTENT_FILTER_STATUSES.map((status) => [status.toLowerCase(), status] as const),
-) as Record<string, IntentFilterStatus>
-
-function parseIntentFilterStatus(value: unknown): IntentFilterStatus | null {
-  if (typeof value !== 'string') return null
-  const normalized = value.trim().toLowerCase()
-
-  if (normalized === '') return 'All'
-
-  return INTENT_FILTER_STATUS_BY_NORMALIZED[normalized] ?? null
-}
-
-function parseIntentInterpretation(value: unknown): IntentInterpretation | null {
-  if (!value || typeof value !== 'object') return null
-
-  const maybe = value as {
-    showKanban?: unknown
-    filterStatus?: unknown
-    showPrioritySelector?: unknown
-    showTeamAssignment?: unknown
-  }
-
-  const hasAnyKnownKey =
-    'showKanban' in maybe ||
-    'filterStatus' in maybe ||
-    'showPrioritySelector' in maybe ||
-    'showTeamAssignment' in maybe
-
-  if (!hasAnyKnownKey) return null
-
-  if ('showKanban' in maybe && maybe.showKanban !== undefined && typeof maybe.showKanban !== 'boolean') return null
-  if (
-    'showPrioritySelector' in maybe &&
-    maybe.showPrioritySelector !== undefined &&
-    typeof maybe.showPrioritySelector !== 'boolean'
-  ) {
-    return null
-  }
-  if (
-    'showTeamAssignment' in maybe &&
-    maybe.showTeamAssignment !== undefined &&
-    typeof maybe.showTeamAssignment !== 'boolean'
-  ) {
-    return null
-  }
-
-  const showKanban = typeof maybe.showKanban === 'boolean' ? maybe.showKanban : true
-  const showPrioritySelector = typeof maybe.showPrioritySelector === 'boolean' ? maybe.showPrioritySelector : false
-  const showTeamAssignment = typeof maybe.showTeamAssignment === 'boolean' ? maybe.showTeamAssignment : false
-
-  let filterStatus: IntentFilterStatus = 'All'
-  if ('filterStatus' in maybe && maybe.filterStatus !== undefined) {
-    const parsed = parseIntentFilterStatus(maybe.filterStatus)
-    if (!parsed) return null
-    filterStatus = parsed
-  }
-
-  return {
-    showKanban,
-    filterStatus,
-    showPrioritySelector,
-    showTeamAssignment,
-  }
-}
-
-function summarizeErrors(errors: unknown): string | null {
-  if (!Array.isArray(errors) || errors.length === 0) return null
-
-  const messages = errors
-    .map((entry) => {
-      if (typeof entry === 'string') return entry.trim()
-      if (entry && typeof entry === 'object') {
-        const maybeEntry = entry as { message?: unknown }
-        if (typeof maybeEntry.message === 'string') return maybeEntry.message.trim()
-      }
-      return ''
-    })
-    .filter((message): message is string => message !== '')
-
-  if (messages.length === 0) return null
-
-  const shown = messages.slice(0, 3)
-  const suffix = messages.length > 3 ? '…' : ''
-  return `${shown.join('; ')}${suffix}`
-}
-
-function getErrorMessage(data: unknown, fallback: string) {
-  if (data && typeof data === 'object') {
-    const maybe = data as { error?: unknown; detail?: unknown; message?: unknown; errors?: unknown }
-
-    const errorsSummary = summarizeErrors(maybe.errors)
-
-    const primary =
-      typeof maybe.error === 'string' && maybe.error.trim() !== ''
-        ? maybe.error
-        : typeof maybe.message === 'string' && maybe.message.trim() !== ''
-          ? maybe.message
-          : null
-
-    if (primary) {
-      const detail = typeof maybe.detail === 'string' && maybe.detail.trim() !== '' ? `: ${maybe.detail}` : ''
-      return errorsSummary ? `${primary}${detail} (${errorsSummary})` : `${primary}${detail}`
-    }
-
-    if (errorsSummary) return errorsSummary
-  }
-
-  return fallback
+  processingMethod?: string
+  confidence?: number
+  reasoning?: string
+  timestamp?: string
+  metadata?: any
 }
 
 export class IntentApiError extends Error {
@@ -133,51 +29,41 @@ export class IntentApiError extends Error {
   }
 }
 
-export async function interpretIntent(
-  input: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<IntentInterpretation> {
+export type ProcessingType = 'local'
+
+export async function interpretIntent(input: string): Promise<IntentInterpretation> {
   const trimmed = input.trim()
   if (!trimmed) {
     throw new IntentApiError('Input is required to interpret intent')
   }
 
-  const response = await fetchFn('/api/interpret-intent', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ input: trimmed }),
-  })
+  // Use local interpretation for now
+  console.log('🔍 Interpreting intent locally:', trimmed)
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
+  const result = interpretIntentLocally(trimmed)
+  return {
+    ...result,
+    processingMethod: 'local',
+    timestamp: new Date().toISOString()
+  }
+}
 
-  let data: unknown = null
+// Get available processing options
+export async function getProcessingOptions() {
   try {
-    const raw = await response.text()
-    if (raw) {
-      try {
-        data = JSON.parse(raw) as unknown
-      } catch {
-        data = raw
-      }
+    const response = await fetch('/api/interpret-intent/options')
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
     }
-  } catch {
-    data = null
+    return await response.json()
+  } catch (error) {
+    console.warn('Failed to fetch processing options:', error)
+    return {
+      processingTypes: [
+        { type: 'local', name: 'Local Processing', status: 'available' }
+      ],
+      defaultType: 'local'
+    }
   }
-  if (!response.ok) {
-    const message = getErrorMessage(data, `Request failed (${response.status})`)
-    throw new IntentApiError(`${message} [HTTP ${response.status}]`, {
-      status: response.status,
-      details: data,
-    })
-  }
-
-  const parsed = parseIntentInterpretation(data)
-  if (!parsed) {
-    throw new IntentApiError('Invalid intent response from /api/interpret-intent', {
-      status: response.status,
-      details: data,
-    })
-  }
-
-  return parsed
 }

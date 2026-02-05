@@ -1,0 +1,154 @@
+.modern-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  font-family: inherit;
+}
+
+.modern-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.modern-btn:hover::before {
+  left: 100%;
+}
+
+/* Sizes */
+.modern-btn--sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.modern-btn--md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.modern-btn--lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Gradient variant */
+.modern-btn--gradient {
+  background: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+  color: white;
+  box-shadow: 0 4px 20px hsl(217 91% 60% / 0.3);
+}
+
+.modern-btn--gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px hsl(217 91% 60% / 0.4);
+}
+
+.modern-btn--gradient:active {
+  transform: translateY(0);
+}
+
+/* Ghost variant */
+.modern-btn--ghost {
+  background: hsl(0 0% 100% / 0.05);
+  border: 1px solid hsl(0 0% 100% / 0.1);
+  color: hsl(210 40% 98%);
+}
+
+.modern-btn--ghost:hover {
+  background: hsl(0 0% 100% / 0.1);
+  border-color: hsl(0 0% 100% / 0.2);
+  transform: translateY(-1px);
+}
+
+/* Glass variant */
+.modern-btn--glass {
+  background: hsl(0 0% 100% / 0.08);
+  border: 1px solid hsl(0 0% 100% / 0.15);
+  color: hsl(210 40% 98%);
+  backdrop-filter: blur(20px);
+}
+
+.modern-btn--glass:hover {
+  background: hsl(0 0% 100% / 0.12);
+  border-color: hsl(217 91% 60% / 0.4);
+  box-shadow: 0 8px 25px hsl(217 91% 60% / 0.2);
+}
+
+/* Outline variant */
+.modern-btn--outline {
+  background: transparent;
+  border: 2px solid hsl(217 91% 60%);
+  color: hsl(217 91% 60%);
+}
+
+.modern-btn--outline:hover {
+  background: hsl(217 91% 60%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(217 91% 60% / 0.3);
+}
+
+/* Disabled state */
+.modern-btn--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.modern-btn--disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Icon and text */
+.modern-btn__icon {
+  display: flex;
+  align-items: center;
+  font-size: 1.1em;
+}
+
+.modern-btn__text {
+  font-weight: inherit;
+}
+
+/* Loading spinner */
+.modern-btn__spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid hsl(0 0% 100% / 0.2);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Pulse animation for important buttons */
+.modern-btn--gradient.modern-btn--pulse {
+  animation: button-pulse 2s ease-in-out infinite;
+}
+
+@keyframes button-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px hsl(217 91% 60% / 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 30px hsl(217 91% 60% / 0.5);
+  }
+}

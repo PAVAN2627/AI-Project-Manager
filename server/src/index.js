@@ -3,7 +3,6 @@ import dotenv from 'dotenv'
 import express from 'express'
 
 import { authRouter } from './routes/auth.js'
-import { azureOpenAIRouter } from './routes/azureOpenAI.js'
 import { healthRouter } from './routes/health.js'
 import { interpretIntentRouter } from './routes/interpretIntent.js'
 import { tasksRouter } from './routes/tasks.js'
@@ -11,9 +10,11 @@ import { getOptionalEnvNumber } from './utils/env.js'
 
 const isProduction = process.env.NODE_ENV === 'production'
 if (!isProduction) {
-  dotenv.config({ path: '.env' })
+  dotenv.config({ path: 'server/.env' })  // Load server-specific env first
+  dotenv.config({ path: '.env' })         // Then load root env
   dotenv.config({ path: '.env.local', override: true })
 } else {
+  dotenv.config({ path: 'server/.env' })
   dotenv.config({ path: '.env' })
 }
 
@@ -54,10 +55,9 @@ app.use(express.json({ limit: '1mb' }))
 app.use('/api', authRouter)
 app.use('/api', tasksRouter)
 app.use('/api/health', healthRouter)
-app.use('/api/azure-openai', azureOpenAIRouter)
 app.use('/', interpretIntentRouter)
 
-const port = getOptionalEnvNumber('PORT', 5174)
+const port = getOptionalEnvNumber('PORT', 3001)
 app.listen(port, () => {
   console.log(`API server listening on http://127.0.0.1:${port}`)
 })

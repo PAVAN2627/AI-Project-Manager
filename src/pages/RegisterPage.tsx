@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 
 import { auth } from '../firebase/firebase'
 import { isFirebaseConfigured } from '../firebase/firebaseConfig'
+import { ModernButton } from '../components/ModernButton/ModernButton'
 import styles from './AuthPage.module.css'
 
 export function RegisterPage() {
@@ -15,19 +15,34 @@ export function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Register</h1>
-        <form
-          className={styles.form}
-          onSubmit={async (e) => {
-            e.preventDefault()
-            if (isSubmitting) return
+    <div className={`${styles.page} bg-gradient-hero`}>
+      <div className={styles.container}>
+        <div className={`${styles.heroSection} animate-float`}>
+          <div className="flex-center gap-4 mb-6">
+            <span className="text-4xl animate-glow">✨</span>
+            <h1 className={`${styles.heroTitle} text-gradient`}>Join the Future</h1>
+          </div>
+          <p className={styles.heroSubtitle}>
+            Create your account and start building with <span className="text-gradient-secondary">AI-driven interfaces</span> that adapt to your needs
+          </p>
+        </div>
+        
+        <div className={`${styles.card} card-glass-lg card-hover animate-shimmer`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.title}>Create Account</h2>
+            <p className={styles.subtitle}>Get started with your AI workspace</p>
+          </div>
+          
+          <form
+            className={styles.form}
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (isSubmitting) return
 
-            if (!isFirebaseConfigured) {
-              setError('Firebase is not configured. Set `VITE_FIREBASE_*` in `.env.local`.')
-              return
-            }
+              if (!isFirebaseConfigured) {
+                setError('Firebase is not configured. Set `VITE_FIREBASE_*` in `.env.local`.')
+                return
+              }
 
             const trimmedEmail = email.trim().toLowerCase()
             const trimmedPassword = password.trim()
@@ -77,24 +92,46 @@ export function RegisterPage() {
           </div>
 
           <div className={styles.actions}>
-            <button
-              className={styles.button}
+            <ModernButton
+              variant="gradient"
+              size="lg"
               type="submit"
               disabled={isSubmitting || !isFirebaseConfigured}
+              loading={isSubmitting}
+              className="w-full"
+              icon={!isSubmitting ? "✨" : undefined}
             >
-              {isSubmitting ? 'Creating…' : 'Create account'}
-            </button>
-            <Link className={styles.link} to="/login">
-              Back to login
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            </ModernButton>
+          </div>
+          
+          <div className={styles.footer}>
+            <p className={styles.footerText}>
+              Already have an account?{' '}
+              <Link className={`${styles.link} text-gradient-secondary`} to="/login">
+                Sign in here
+              </Link>
+            </p>
+            <Link className={`${styles.backLink} flex-center gap-2`} to="/">
+              <span>←</span> Back to Home
             </Link>
           </div>
         </form>
 
-        {!isFirebaseConfigured ? (
-          <p className={styles.helper}>Firebase isn’t configured yet. Set `VITE_FIREBASE_*` in `.env.local`.</p>
-        ) : null}
+        {!isFirebaseConfigured && (
+          <div className={styles.errorCard}>
+            <span className={styles.errorIcon}>⚠️</span>
+            <p className={styles.errorText}>Firebase isn't configured yet. Check your environment variables.</p>
+          </div>
+        )}
 
-        {error ? <p className={styles.helper}>{error}</p> : null}
+        {error && (
+          <div className={styles.errorCard}>
+            <span className={styles.errorIcon}>❌</span>
+            <p className={styles.errorText}>{error}</p>
+          </div>
+        )}
+        </div>
       </div>
     </div>
   )

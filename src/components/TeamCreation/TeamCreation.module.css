@@ -1,0 +1,96 @@
+/* TeamCreation component styles */
+.container {
+  @apply space-y-6;
+}
+
+.teamCard {
+  @apply card-glass p-6;
+}
+
+.sectionTitle {
+  @apply flex items-center gap-3 mb-4;
+}
+
+.sectionIcon {
+  @apply w-6 h-6 text-primary;
+}
+
+.title {
+  @apply text-xl font-bold text-foreground;
+}
+
+.subtitle {
+  @apply text-lg font-semibold text-foreground;
+}
+
+.inputGroup {
+  @apply space-y-4;
+}
+
+.inputField {
+  @apply w-full px-4 py-3 bg-black/20 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors;
+}
+
+.addMemberForm {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-3 mb-4;
+}
+
+.addMemberInput {
+  @apply w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary;
+}
+
+.addButton {
+  @apply px-4 py-2 btn-gradient text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.membersList {
+  @apply space-y-2 max-h-64 overflow-y-auto;
+}
+
+.emptyState {
+  @apply text-center py-8;
+}
+
+.emptyIcon {
+  @apply w-12 h-12 mx-auto mb-3 text-muted-foreground;
+}
+
+.memberCard {
+  @apply flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/8 transition-colors;
+}
+
+.memberInfo {
+  @apply flex items-center gap-3;
+}
+
+.memberAvatar {
+  @apply w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-medium text-white;
+}
+
+.memberDetails {
+  @apply flex-1 min-w-0;
+}
+
+.memberName {
+  @apply text-sm font-medium text-foreground truncate;
+}
+
+.memberMeta {
+  @apply flex items-center gap-2 mt-1;
+}
+
+.removeButton {
+  @apply p-1 text-destructive hover:bg-destructive/10 rounded-lg transition-colors;
+}
+
+.createTeamSection {
+  @apply card-glass p-6;
+}
+
+.createTeamContent {
+  @apply flex items-center justify-between;
+}
+
+.createTeamButton {
+  @apply btn-gradient px-6 py-3 font-medium rounded-lg;
+}
