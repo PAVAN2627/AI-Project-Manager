@@ -26,13 +26,13 @@ function getAzureChatCompletionsUrl() {
   if (!endpoint || !deployment || !apiVersion) {
     throw new Error(
       [
-        'Missing Azure OpenAI config. Provide either:',
+        '[azureOpenAIService] Missing Azure OpenAI config. Provide either:',
         '- AZURE_OPENAI_CHAT_COMPLETIONS_URL (full chat/completions URL)',
         'or:',
         '- AZURE_OPENAI_ENDPOINT',
         '- AZURE_OPENAI_DEPLOYMENT',
         '- AZURE_OPENAI_API_VERSION',
-      ].join(' '),
+      ].join('\n'),
     )
   }
 

@@ -49,7 +49,6 @@ app.use('/api', authRouter)
 app.use('/api', tasksRouter)
 app.use('/api/health', healthRouter)
 app.use('/api/azure-openai', azureOpenAIRouter)
-app.use('/api', interpretIntentRouter)
 app.use('/', interpretIntentRouter)
 
 const port = getOptionalEnvNumber('PORT', 5174)

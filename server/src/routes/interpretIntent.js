@@ -10,16 +10,22 @@ function normalizeInput(value) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   if (!trimmed) return null
-  return trimmed.length > MAX_INPUT_LENGTH ? trimmed.slice(0, MAX_INPUT_LENGTH) : trimmed
+  return trimmed
 }
 
-interpretIntentRouter.post('/interpret-intent', async (req, res) => {
-  const input = normalizeInput(req.body?.input ?? req.body?.prompt)
+async function handleInterpretIntent(req, res) {
+  const rawInput = req.body?.input ?? req.body?.prompt
+  const input = normalizeInput(rawInput)
   if (!input) {
     res.status(400).json({
       error: "Missing 'input'",
       example: { input: 'Show me blocked tasks and assign priorities' },
     })
+    return
+  }
+
+  if (typeof rawInput === 'string' && rawInput.trim().length > MAX_INPUT_LENGTH) {
+    res.status(413).json({ error: `Input too long (max ${MAX_INPUT_LENGTH} characters)` })
     return
   }
 
@@ -35,4 +41,7 @@ interpretIntentRouter.post('/interpret-intent', async (req, res) => {
 
     res.status(502).json({ error: 'Azure OpenAI request failed' })
   }
-})
+}
+
+interpretIntentRouter.post('/interpret-intent', handleInterpretIntent)
+interpretIntentRouter.post('/api/interpret-intent', handleInterpretIntent)

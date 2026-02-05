@@ -6,11 +6,23 @@ function normalizePrompt(value) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   if (!trimmed) return null
-  return trimmed.length > MAX_PROMPT_LENGTH ? trimmed.slice(0, MAX_PROMPT_LENGTH) : trimmed
+  if (trimmed.length > MAX_PROMPT_LENGTH) {
+    throw new Error(`Prompt is too long (max ${MAX_PROMPT_LENGTH} characters)`)
+  }
+  return trimmed
 }
 
 function extractJsonObject(text) {
   if (typeof text !== 'string') return null
+
+  const trimmed = text.trim()
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      return JSON.parse(trimmed)
+    } catch {
+      // Fall through to a slightly more permissive heuristic.
+    }
+  }
 
   const start = text.indexOf('{')
   const end = text.lastIndexOf('}')
@@ -53,15 +65,14 @@ function normalizeBoolean(value, fallback) {
 }
 
 function fallbackInterpret(prompt) {
-  const normalized = prompt.toLowerCase()
-  const hasDone = /(\bdone\b|\bcompleted\b|\bfinished\b)/i.test(normalized)
-  const hasBlocked = /(\bblocked\b|\bstuck\b|\bimpeded\b)/i.test(normalized)
-  const hideKanban = /(\bhide\b|\bwithout\b|\bno\b).*(\bkanban\b|\bboard\b)/i.test(normalized)
+  const hasDone = /(\bdone\b|\bcompleted\b|\bfinished\b)/i.test(prompt)
+  const hasBlocked = /(\bblocked\b|\bstuck\b|\bimpeded\b)/i.test(prompt)
+  const hideKanban = /(\bhide\b|\bwithout\b|\bno\b).*(\bkanban\b|\bboard\b)/i.test(prompt)
 
-  const showPrioritySelector = /(\bpriority\b|\bpriorities\b|\bprioritize\b)/i.test(normalized)
+  const showPrioritySelector = /(\bpriority\b|\bpriorities\b|\bprioritize\b)/i.test(prompt)
   const showTeamAssignment =
-    /(\bassign\b|\bassignee\b|\bowner\b|\bteam\b|\bpeople\b)/i.test(normalized) &&
-    !/(\bassign\s+priority\b|\bassign\s+priorities\b)/i.test(normalized)
+    /(\bassign\b|\bassignee\b|\bowner\b|\bteam\b|\bpeople\b)/i.test(prompt) &&
+    !/(\bassign\s+priority\b|\bassign\s+priorities\b)/i.test(prompt)
 
   return {
     showKanban: !hideKanban,
