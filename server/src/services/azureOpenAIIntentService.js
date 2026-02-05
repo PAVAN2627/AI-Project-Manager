@@ -79,12 +79,18 @@ function normalizeBoolean(value, fallback) {
   return typeof value === 'boolean' ? value : fallback
 }
 
+function pickFilterStatus({ hasDone, hasBlocked, hasInProgress, hasTodo }) {
+  if (hasDone) return 'Done'
+  if (hasBlocked) return 'Blocked'
+  if (hasInProgress) return 'In Progress'
+  if (hasTodo) return 'Todo'
+  return 'All'
+}
+
 function fallbackInterpret(prompt) {
   const hasDone = /(\bdone\b|\bcompleted\b|\bfinished\b)/i.test(prompt)
   const hasBlocked = /(\bblocked\b|\bstuck\b|\bimpeded\b)/i.test(prompt)
-  const hasInProgress = /(\bin\s+progress\b|\bin-progress\b|\binprogress\b|\bwip\b|\bworking\s+on\b)/i.test(
-    prompt,
-  )
+  const hasInProgress = /(\bin\s+progress\b|\bin-progress\b|\binprogress\b|\bwip\b|\bworking\s+on\b)/i.test(prompt)
   const hasTodo = /(\btodo\b|\bto\s+do\b|\bbacklog\b)/i.test(prompt)
   const hideKanban = /(\bhide\b|\bwithout\b|\bno\b).*(\bkanban\b|\bboard\b)/i.test(prompt)
 
@@ -95,18 +101,20 @@ function fallbackInterpret(prompt) {
 
   return {
     showKanban: !hideKanban,
-    filterStatus: hasDone
-      ? 'Done'
-      : hasBlocked
-        ? 'Blocked'
-        : hasInProgress
-          ? 'In Progress'
-          : hasTodo
-            ? 'Todo'
-            : 'All',
+    filterStatus: pickFilterStatus({ hasDone, hasBlocked, hasInProgress, hasTodo }),
     showPrioritySelector,
     showTeamAssignment,
   }
+}
+
+function mergeFilterStatus({ modelStatus, fallbackStatus }) {
+  if (typeof modelStatus !== 'string') return fallbackStatus
+  const normalized = normalizeFilterStatus(modelStatus)
+  if (normalized === 'All' && fallbackStatus !== 'All') {
+    // Prefer the heuristic when the model is non-committal (or produced an unknown status).
+    return fallbackStatus
+  }
+  return normalized
 }
 
 function normalizeIntent(raw, prompt) {
@@ -115,11 +123,10 @@ function normalizeIntent(raw, prompt) {
 
   const maybe = raw
 
-  let filterStatus = fallback.filterStatus
-  if (typeof maybe.filterStatus === 'string') {
-    const normalized = normalizeFilterStatus(maybe.filterStatus)
-    filterStatus = normalized === 'All' && fallback.filterStatus !== 'All' ? fallback.filterStatus : normalized
-  }
+  const filterStatus = mergeFilterStatus({
+    modelStatus: maybe.filterStatus,
+    fallbackStatus: fallback.filterStatus,
+  })
 
   return {
     showKanban: normalizeBoolean(maybe.showKanban, fallback.showKanban),
