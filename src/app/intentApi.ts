@@ -88,11 +88,16 @@ function getErrorMessage(data: unknown, fallback: string) {
 }
 
 export async function interpretIntent(input: string): Promise<IntentInterpretation> {
-  const response = await fetch('/api/interpret-intent', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ input }),
-  })
+  let response: Response
+  try {
+    response = await fetch('/api/interpret-intent', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input }),
+    })
+  } catch {
+    throw new Error('Network error while contacting /api/interpret-intent')
+  }
 
   const data = (await response.json().catch(() => null)) as unknown
   if (!response.ok) {
