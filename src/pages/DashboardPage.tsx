@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { signOut } from 'firebase/auth'
@@ -12,7 +12,7 @@ import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssig
 import { mockUsers } from '../data/mockUsers'
 import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
 import { interpretIntent } from '../app/intentApi'
-import { createTask, getTasks, updateTask } from '../app/taskApi'
+import { createTask, subscribeTasks, updateTask } from '../app/taskApi'
 import { auth } from '../firebase/firebase'
 import type { Task } from '../types/task'
 import type { UIPlan } from '../tambo/types'
@@ -65,14 +65,6 @@ export function DashboardPage() {
   const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
   const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
-  const getAuthToken = useCallback(async () => {
-    if (!user) {
-      throw new Error('Not signed in')
-    }
-
-    return user.getIdToken()
-  }, [user])
-
   const visibleTasks = useMemo(() => {
     if (!activePlan.kanban.enabled) return tasks
     if (activePlan.kanban.filterStatus) {
@@ -83,41 +75,40 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!user) return
-    let cancelled = false
+    let hasReceivedSnapshot = false
 
     setIsLoadingTasks(true)
     setTaskError(null)
 
-    void getAuthToken()
-      .then((token) => getTasks(token))
-      .then((next) => {
-        if (cancelled) return
+    const unsubscribe = subscribeTasks(
+      user.uid,
+      (next) => {
         setTasks(next)
-      })
-      .catch((error) => {
-        if (cancelled) return
-        setTaskError(error instanceof Error ? error.message : 'Failed to load tasks')
-      })
-      .finally(() => {
-        if (cancelled) return
-        setIsLoadingTasks(false)
-      })
+        if (!hasReceivedSnapshot) {
+          hasReceivedSnapshot = true
+          setIsLoadingTasks(false)
+        }
+      },
+      (error) => {
+        setTaskError(error.message)
+        if (!hasReceivedSnapshot) {
+          hasReceivedSnapshot = true
+          setIsLoadingTasks(false)
+        }
+      },
+    )
 
     return () => {
-      cancelled = true
+      unsubscribe()
     }
-  }, [getAuthToken, user])
+  }, [user])
 
   function handleCreateTask(title: string) {
     if (!user) return
 
     setIsTasksBusy(true)
     setTaskError(null)
-    void getAuthToken()
-      .then((token) => createTask(token, { title }))
-      .then((task) => {
-        setTasks((prev) => [task, ...prev])
-      })
+    void createTask(user.uid, { title })
       .catch((error) => {
         setTaskError(error instanceof Error ? error.message : 'Failed to create task')
       })
@@ -131,40 +122,27 @@ export function DashboardPage() {
 
     const previousTask = tasks.find((t) => t.id === nextTask.id) ?? null
 
-    const localPatch: Partial<Task> = {}
-    const apiPatch: { status?: Task['status']; priority?: Task['priority']; assigneeId?: string } = {}
+    const patch: { status?: Task['status']; priority?: Task['priority']; assigneeId?: string | null } = {}
 
     if (!previousTask || previousTask.status !== nextTask.status) {
-      localPatch.status = nextTask.status
-      apiPatch.status = nextTask.status
+      patch.status = nextTask.status
     }
 
     if (!previousTask || previousTask.priority !== nextTask.priority) {
-      localPatch.priority = nextTask.priority
-      apiPatch.priority = nextTask.priority
+      patch.priority = nextTask.priority
     }
 
     if (!previousTask || previousTask.assigneeId !== nextTask.assigneeId) {
-      localPatch.assigneeId = nextTask.assigneeId
-      apiPatch.assigneeId = nextTask.assigneeId ?? ''
+      patch.assigneeId = nextTask.assigneeId ?? null
     }
 
-    if (Object.keys(apiPatch).length === 0) return
-
-    setTaskError(null)
-    setTasks((prev) => prev.map((t) => (t.id === nextTask.id ? { ...t, ...localPatch } : t)))
+    if (Object.keys(patch).length === 0) return
 
     setIsTasksBusy(true)
-    void getAuthToken()
-      .then((token) => updateTask(token, nextTask.id, apiPatch))
-      .then((saved) => {
-        setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)))
-      })
+    setTaskError(null)
+    void updateTask(user.uid, nextTask.id, patch)
       .catch((error) => {
         setTaskError(error instanceof Error ? error.message : 'Failed to update task')
-        if (previousTask) {
-          setTasks((prev) => prev.map((t) => (t.id === previousTask.id ? previousTask : t)))
-        }
       })
       .finally(() => {
         setIsTasksBusy(false)
