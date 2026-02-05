@@ -108,3 +108,9 @@
   font-size: 12px;
   overflow: auto;
 }
+
+.planError {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #ff9a9a;
+}

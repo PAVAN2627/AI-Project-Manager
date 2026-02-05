@@ -8,11 +8,41 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
+import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
+import { interpretIntent } from '../app/intentApi'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
 import type { Task } from '../types/task'
-import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
+
+const INITIAL_PLAN: UIPlan = {
+  kanban: { enabled: true },
+  prioritySelector: { enabled: false },
+  teamAssignment: { enabled: false },
+}
+
+const KANBAN_FILTER_STATUS_MAP: Record<IntentFilterStatus, UIPlan['kanban']['filterStatus']> = {
+  All: undefined,
+  Blocked: 'blocked',
+  Done: 'done',
+}
+
+function toKanbanFilterStatus(status: IntentFilterStatus): UIPlan['kanban']['filterStatus'] {
+  return KANBAN_FILTER_STATUS_MAP[status]
+}
+
+function toUIPlan(intent: IntentInterpretation): UIPlan {
+  const filterStatus = toKanbanFilterStatus(intent.filterStatus)
+
+  return {
+    kanban: {
+      enabled: intent.showKanban,
+      filterStatus,
+    },
+    prioritySelector: { enabled: intent.showPrioritySelector },
+    teamAssignment: { enabled: intent.showTeamAssignment },
+  }
+}
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -21,11 +51,14 @@ export function DashboardPage() {
   const [isTasksBusy, setIsTasksBusy] = useState(false)
   const [isLoadingTasks, setIsLoadingTasks] = useState(true)
   const [prompt, setPrompt] = useState('')
+  const [intent, setIntent] = useState<IntentInterpretation | null>(null)
+  const [intentError, setIntentError] = useState<string | null>(null)
+  const [isInterpretingIntent, setIsInterpretingIntent] = useState(false)
+  const [isPlanDetailsOpen, setIsPlanDetailsOpen] = useState(false)
   const session = useMemo(() => getAuthSession(), [])
 
-  const { plan, isPlanning, defaultPlan } = useGenerativeUI()
-  const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
-  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false)
+  const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
+  const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
   const visibleTasks = useMemo(() => {
     if (!activePlan.kanban.enabled) return tasks
@@ -119,6 +152,30 @@ export function DashboardPage() {
       })
   }
 
+  async function handleGenerateInterface(rawInput: string) {
+    const trimmed = rawInput.trim()
+    if (!trimmed) {
+      setIntentError('Please enter a prompt before generating an interface.')
+      setHasAttemptedIntent(true)
+      setIsPlanDetailsOpen(true)
+      return
+    }
+
+    setIntentError(null)
+    setHasAttemptedIntent(true)
+    setIsPlanDetailsOpen(true)
+    setIsInterpretingIntent(true)
+    try {
+      const nextIntent = await interpretIntent(trimmed)
+      setIntent(nextIntent)
+      setActivePlan(toUIPlan(nextIntent))
+    } catch (error) {
+      setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
+    } finally {
+      setIsInterpretingIntent(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -146,13 +203,9 @@ export function DashboardPage() {
 
         <PromptBar
           value={prompt}
-          isBusy={isPlanning}
+          isBusy={isInterpretingIntent}
           onChange={setPrompt}
-          onSubmit={async () => {
-            const nextPlan = await plan(prompt)
-            setActivePlan(nextPlan)
-            setHasGeneratedPlan(true)
-          }}
+          onSubmit={handleGenerateInterface}
         />
       </header>
 
@@ -165,10 +218,16 @@ export function DashboardPage() {
           <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
-            <p>
-              Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) to
-              simulate a Generative UI plan.
-            </p>
+            {intentError ? (
+              <p className={styles.planError}>{intentError}</p>
+            ) : hasAttemptedIntent ? (
+              <p>Kanban board is hidden based on the AI decision plan.</p>
+            ) : (
+              <p>
+                Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) to
+                generate a UI plan.
+              </p>
+            )}
           </div>
         )}
 
@@ -196,10 +255,21 @@ export function DashboardPage() {
             />
           ) : null}
 
-          {hasGeneratedPlan ? (
-            <details className={styles.planDetails}>
-              <summary>UI plan (mock Tambo)</summary>
-              <pre className={styles.planJson}>{JSON.stringify(activePlan, null, 2)}</pre>
+          {hasAttemptedIntent ? (
+            <details
+              className={styles.planDetails}
+              open={isPlanDetailsOpen}
+              onToggle={(e) => {
+                setIsPlanDetailsOpen(e.currentTarget.open)
+              }}
+            >
+              <summary>AI UI Decision Plan</summary>
+              {intentError ? <p className={styles.planError}>{intentError}</p> : null}
+              {intent ? (
+                <pre className={styles.planJson}>{JSON.stringify(intent, null, 2)}</pre>
+              ) : intentError ? null : (
+                <pre className={styles.planJson}>No plan generated yet.</pre>
+              )}
             </details>
           ) : null}
         </section>
