@@ -1,4 +1,4 @@
-import { getRequiredEnv } from '../utils/env.js'
+import { getOptionalEnv, getRequiredEnv } from '../utils/env.js'
 
 function tryParseJson(bodyText) {
   try {
@@ -8,9 +8,60 @@ function tryParseJson(bodyText) {
   }
 }
 
+function normalizeAzureEndpoint(value) {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed
+}
+
+function getAzureChatCompletionsUrl() {
+  const explicitUrl = getOptionalEnv('AZURE_OPENAI_CHAT_COMPLETIONS_URL', null)
+  if (explicitUrl) return explicitUrl
+
+  const endpoint = normalizeAzureEndpoint(getOptionalEnv('AZURE_OPENAI_ENDPOINT', null))
+  const deployment = getOptionalEnv('AZURE_OPENAI_DEPLOYMENT', null)
+  const apiVersion = getOptionalEnv('AZURE_OPENAI_API_VERSION', null)
+
+  if (!endpoint || !deployment || !apiVersion) {
+    throw new Error(
+      [
+        'Missing Azure OpenAI config. Provide either:',
+        '- AZURE_OPENAI_CHAT_COMPLETIONS_URL (full chat/completions URL)',
+        'or:',
+        '- AZURE_OPENAI_ENDPOINT',
+        '- AZURE_OPENAI_DEPLOYMENT',
+        '- AZURE_OPENAI_API_VERSION',
+      ].join(' '),
+    )
+  }
+
+  const normalizedDeployment = deployment.trim()
+  if (!normalizedDeployment) {
+    throw new Error('Missing required environment variable: AZURE_OPENAI_DEPLOYMENT')
+  }
+
+  const normalizedApiVersion = apiVersion.trim()
+  if (!normalizedApiVersion) {
+    throw new Error('Missing required environment variable: AZURE_OPENAI_API_VERSION')
+  }
+
+  return `${endpoint}/openai/deployments/${encodeURIComponent(
+    normalizedDeployment,
+  )}/chat/completions?api-version=${encodeURIComponent(normalizedApiVersion)}`
+}
+
+function getAzureApiKey() {
+  const newKey = getOptionalEnv('AZURE_OPENAI_KEY', null)
+  if (newKey) return newKey
+
+  // Back-compat: older env name used by the existing `/api/azure-openai/chat` endpoint.
+  return getRequiredEnv('AZURE_OPENAI_API_KEY')
+}
+
 export async function createChatCompletion({ messages, temperature = 0.2 }) {
-  const url = getRequiredEnv('AZURE_OPENAI_CHAT_COMPLETIONS_URL')
-  const apiKey = getRequiredEnv('AZURE_OPENAI_API_KEY')
+  const url = getAzureChatCompletionsUrl()
+  const apiKey = getAzureApiKey()
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15_000)
