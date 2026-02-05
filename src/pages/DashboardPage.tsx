@@ -28,6 +28,8 @@ const PLAN_LABEL = 'AI UI Decision Plan'
 
 const KANBAN_FILTER_STATUS_MAP: Record<IntentFilterStatus, UIPlan['kanban']['filterStatus']> = {
   All: undefined,
+  Todo: 'todo',
+  'In Progress': 'in_progress',
   Blocked: 'blocked',
   Done: 'done',
 }
