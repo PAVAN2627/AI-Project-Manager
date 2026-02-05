@@ -31,6 +31,11 @@ Minimal auth API (backend):
 - `POST /api/register` `{ email, password }`
 - `POST /api/login` `{ email, password }`
 
+Azure OpenAI endpoints (backend, optional):
+
+- `POST /api/azure-openai/chat` `{ prompt }` or `{ messages }`
+- `POST /api/interpret-intent` `{ input }` (also available as `POST /interpret-intent`)
+
 If you deploy this as an SPA, make sure your host serves `index.html` for unknown routes (so refreshing `/dashboard` works).
 
 ## Configuring Tambo (optional)

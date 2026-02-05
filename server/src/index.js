@@ -5,6 +5,7 @@ import express from 'express'
 import { authRouter } from './routes/auth.js'
 import { azureOpenAIRouter } from './routes/azureOpenAI.js'
 import { healthRouter } from './routes/health.js'
+import { interpretIntentRouter } from './routes/interpretIntent.js'
 import { tasksRouter } from './routes/tasks.js'
 import { getOptionalEnvNumber } from './utils/env.js'
 
@@ -48,6 +49,7 @@ app.use('/api', authRouter)
 app.use('/api', tasksRouter)
 app.use('/api/health', healthRouter)
 app.use('/api/azure-openai', azureOpenAIRouter)
+app.use('/', interpretIntentRouter)
 
 const port = getOptionalEnvNumber('PORT', 5174)
 app.listen(port, () => {
