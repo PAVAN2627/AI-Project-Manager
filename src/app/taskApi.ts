@@ -142,17 +142,19 @@ export async function createTask(
     priority?: TaskPriority
     assigneeId?: string
   },
-): Promise<void> {
+): Promise<string> {
   const status: TaskStatus = body.status ?? 'todo'
   const priority: TaskPriority = body.priority ?? 'medium'
 
-  await addDoc(tasksCollection(userId), {
+  const docRef = await addDoc(tasksCollection(userId), {
     title: body.title,
     status: TASK_STATUS_LABEL[status],
     priority: TASK_PRIORITY_LABEL[priority],
     assignedTo: body.assigneeId?.trim().length ? body.assigneeId : undefined,
     createdAt: serverTimestamp(),
   })
+
+  return docRef.id
 }
 
 export async function updateTask(

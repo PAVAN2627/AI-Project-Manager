@@ -91,7 +91,8 @@ export function DashboardPage() {
         setIsLoadingTasks(false)
       },
       (error) => {
-        setTaskError(error.message)
+        console.warn('[firestore] Failed to subscribe to tasks', error)
+        setTaskError('Failed to load tasks from Firestore.')
         setIsLoadingTasks(false)
       },
     )
