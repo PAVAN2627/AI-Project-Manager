@@ -24,7 +24,7 @@ export function PromptBar({ value, isBusy, onChange, onSubmit }: PromptBarProps)
         aria-label='Prompt'
       />
       <button className={styles.button} type='submit' disabled={isBusy || value.trim().length === 0}>
-        {isBusy ? 'Planning…' : 'Generate UI'}
+        {isBusy ? 'Generating…' : 'Generate Interface'}
       </button>
     </form>
   )

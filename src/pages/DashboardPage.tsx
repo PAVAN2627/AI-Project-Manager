@@ -8,11 +8,36 @@ import { PromptBar } from '../components/PromptBar/PromptBar'
 import { TeamAssignmentPanel } from '../components/TeamAssignmentPanel/TeamAssignmentPanel'
 import { mockUsers } from '../data/mockUsers'
 import { clearAuthSession, getAuthSession } from '../app/authSession'
+import type { IntentInterpretation } from '../app/intentApi'
+import { interpretIntent } from '../app/intentApi'
 import { createTask, getTasks, updateTask } from '../app/taskApi'
 import type { Task } from '../types/task'
-import { useGenerativeUI } from '../tambo/useGenerativeUI'
 import type { UIPlan } from '../tambo/types'
 import styles from './DashboardPage.module.css'
+
+const DEFAULT_PLAN: UIPlan = {
+  kanban: { enabled: true },
+  prioritySelector: { enabled: false },
+  teamAssignment: { enabled: false },
+}
+
+function toUIPlan(intent: IntentInterpretation): UIPlan {
+  const filterStatus =
+    intent.filterStatus === 'Blocked'
+      ? 'blocked'
+      : intent.filterStatus === 'Done'
+        ? 'done'
+        : undefined
+
+  return {
+    kanban: {
+      enabled: intent.showKanban,
+      ...(filterStatus ? { filterStatus } : {}),
+    },
+    prioritySelector: { enabled: intent.showPrioritySelector },
+    teamAssignment: { enabled: intent.showTeamAssignment },
+  }
+}
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -21,10 +46,12 @@ export function DashboardPage() {
   const [isTasksBusy, setIsTasksBusy] = useState(false)
   const [isLoadingTasks, setIsLoadingTasks] = useState(true)
   const [prompt, setPrompt] = useState('')
+  const [intent, setIntent] = useState<IntentInterpretation | null>(null)
+  const [intentError, setIntentError] = useState<string | null>(null)
+  const [isInterpretingIntent, setIsInterpretingIntent] = useState(false)
   const session = useMemo(() => getAuthSession(), [])
 
-  const { plan, isPlanning, defaultPlan } = useGenerativeUI()
-  const [activePlan, setActivePlan] = useState<UIPlan>(defaultPlan)
+  const [activePlan, setActivePlan] = useState<UIPlan>(DEFAULT_PLAN)
   const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false)
 
   const visibleTasks = useMemo(() => {
@@ -146,12 +173,26 @@ export function DashboardPage() {
 
         <PromptBar
           value={prompt}
-          isBusy={isPlanning}
+          isBusy={isInterpretingIntent}
           onChange={setPrompt}
           onSubmit={async () => {
-            const nextPlan = await plan(prompt)
-            setActivePlan(nextPlan)
-            setHasGeneratedPlan(true)
+            const trimmed = prompt.trim()
+            if (!trimmed) return
+
+            setIntentError(null)
+            setIsInterpretingIntent(true)
+            try {
+              const nextIntent = await interpretIntent(trimmed)
+              setIntent(nextIntent)
+              setActivePlan(toUIPlan(nextIntent))
+              setHasGeneratedPlan(true)
+            } catch (error) {
+              setIntent(null)
+              setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
+              setHasGeneratedPlan(true)
+            } finally {
+              setIsInterpretingIntent(false)
+            }
           }}
         />
       </header>
@@ -165,10 +206,14 @@ export function DashboardPage() {
           <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
         ) : (
           <div className={styles.placeholder}>
-            <p>
-              Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) to
-              simulate a Generative UI plan.
-            </p>
+            {hasGeneratedPlan ? (
+              <p>Kanban board is hidden based on the AI decision plan.</p>
+            ) : (
+              <p>
+                Enter a prompt above (example: <code>Show me blocked tasks and assign priorities</code>) to
+                generate a UI plan.
+              </p>
+            )}
           </div>
         )}
 
@@ -197,9 +242,15 @@ export function DashboardPage() {
           ) : null}
 
           {hasGeneratedPlan ? (
-            <details className={styles.planDetails}>
-              <summary>UI plan (mock Tambo)</summary>
-              <pre className={styles.planJson}>{JSON.stringify(activePlan, null, 2)}</pre>
+            <details className={styles.planDetails} open>
+              <summary>AI UI Decision Plan</summary>
+              <pre className={styles.planJson}>
+                {intentError
+                  ? intentError
+                  : intent
+                    ? JSON.stringify(intent, null, 2)
+                    : 'No plan generated yet.'}
+              </pre>
             </details>
           ) : null}
         </section>
