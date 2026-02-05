@@ -1,128 +1,192 @@
+import {
+  addDoc,
+  collection,
+  deleteField,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  Timestamp,
+  updateDoc,
+} from 'firebase/firestore'
+import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
+
+import { firestore } from '../firebase/firebase'
 import type { Task, TaskPriority, TaskStatus } from '../types/task'
+import { TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from '../types/task'
 
-const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
-const TASK_PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'critical']
+type FirestoreTaskDoc = {
+  title: string
+  status: string
+  priority: string
+  assignedTo?: string
+  createdAt?: Timestamp | null
+}
 
-function isTask(value: unknown): value is Task {
+const STATUS_BY_LABEL = new Map<string, TaskStatus>(
+  Object.entries(TASK_STATUS_LABEL).map(([key, label]) => [label, key as TaskStatus]),
+)
+
+const PRIORITY_BY_LABEL = new Map<string, TaskPriority>(
+  Object.entries(TASK_PRIORITY_LABEL).map(([key, label]) => [label, key as TaskPriority]),
+)
+
+const STATUS_LABELS = new Set<string>(Object.values(TASK_STATUS_LABEL))
+const PRIORITY_LABELS = new Set<string>(Object.values(TASK_PRIORITY_LABEL))
+
+function isFirestoreTaskDoc(value: unknown): value is FirestoreTaskDoc {
   if (!value || typeof value !== 'object') return false
+
   const maybe = value as {
-    id?: unknown
     title?: unknown
     status?: unknown
     priority?: unknown
-    assigneeId?: unknown
+    assignedTo?: unknown
+    createdAt?: unknown
   }
 
-  if (typeof maybe.id !== 'string' || maybe.id.trim() === '') return false
   if (typeof maybe.title !== 'string' || maybe.title.trim() === '') return false
-  if (typeof maybe.status !== 'string' || !TASK_STATUSES.includes(maybe.status as TaskStatus)) return false
-  if (typeof maybe.priority !== 'string' || !TASK_PRIORITIES.includes(maybe.priority as TaskPriority)) {
-    return false
+  if (typeof maybe.status !== 'string' || !STATUS_LABELS.has(maybe.status)) return false
+  if (typeof maybe.priority !== 'string' || !PRIORITY_LABELS.has(maybe.priority)) return false
+
+  if (maybe.assignedTo !== undefined) {
+    if (typeof maybe.assignedTo !== 'string') return false
+    if (maybe.assignedTo.trim() === '') return false
   }
 
-  if (maybe.assigneeId !== undefined) {
-    if (typeof maybe.assigneeId !== 'string') return false
-    if (maybe.assigneeId.trim() === '') return false
+  if (maybe.createdAt !== undefined && maybe.createdAt !== null && !(maybe.createdAt instanceof Timestamp)) {
+    return false
   }
 
   return true
 }
 
-function getErrorMessage(data: unknown, fallback: string) {
-  if (data && typeof data === 'object') {
-    const maybe = data as { error?: unknown }
-    if (typeof maybe.error === 'string' && maybe.error.trim() !== '') {
-      return maybe.error
+function toTask(id: string, data: FirestoreTaskDoc): Task | null {
+  const status = STATUS_BY_LABEL.get(data.status)
+  const priority = PRIORITY_BY_LABEL.get(data.priority)
+
+  if (!status || !priority) {
+    console.error('[firestore] Invalid task state', {
+      id,
+      status: data.status,
+      priority: data.priority,
+    })
+    return null
+  }
+
+  const assigneeId = data.assignedTo?.trim().length ? data.assignedTo.trim() : undefined
+
+  return {
+    id,
+    title: data.title,
+    status,
+    priority,
+    assigneeId,
+  }
+}
+
+function mapDocsToTasks(docs: QueryDocumentSnapshot<DocumentData>[]): Task[] {
+  const tasks: Task[] = []
+
+  for (const docSnap of docs) {
+    const data = docSnap.data() as unknown
+    if (!isFirestoreTaskDoc(data)) {
+      console.warn(`[firestore] Invalid task document shape: ${docSnap.id}`)
+      continue
+    }
+
+    if (data.createdAt === undefined) {
+      console.warn(`[firestore] Task is missing createdAt: ${docSnap.id}`)
+    }
+
+    const task = toTask(docSnap.id, data)
+    if (task) {
+      tasks.push(task)
     }
   }
 
-  return fallback
+  return tasks
 }
 
-function getAuthHeaders(authToken: string) {
-  return {
-    authorization: `Bearer ${authToken}`,
-  }
+function tasksCollection(userId: string) {
+  return collection(firestore, 'users', userId, 'tasks')
 }
 
-export async function getTasks(authToken: string): Promise<Task[]> {
-  const response = await fetch('/api/tasks', {
-    headers: {
-      ...getAuthHeaders(authToken),
+export function subscribeTasks(
+  userId: string,
+  onChange: (tasks: Task[]) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const tasksQuery = query(tasksCollection(userId), orderBy('createdAt', 'desc'))
+
+  return onSnapshot(
+    tasksQuery,
+    (snapshot) => {
+      onChange(mapDocsToTasks(snapshot.docs))
     },
-  })
+    (error) => {
+      onError?.(error)
+    },
+  )
+}
 
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
-  }
+export async function getTasksOnce(userId: string): Promise<Task[]> {
+  const tasksQuery = query(tasksCollection(userId), orderBy('createdAt', 'desc'))
+  const snapshot = await getDocs(tasksQuery)
 
-  const tasksValue = (data as { tasks?: unknown } | null)?.tasks
-  if (!Array.isArray(tasksValue) || !tasksValue.every(isTask)) {
-    throw new Error('Invalid tasks response')
-  }
-
-  return tasksValue
+  return mapDocsToTasks(snapshot.docs)
 }
 
 export async function createTask(
-  authToken: string,
+  userId: string,
   body: {
     title: string
     status?: TaskStatus
     priority?: TaskPriority
     assigneeId?: string
   },
-): Promise<Task> {
-  const response = await fetch('/api/tasks', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...getAuthHeaders(authToken),
-    },
-    body: JSON.stringify(body),
+): Promise<string> {
+  const status: TaskStatus = body.status ?? 'todo'
+  const priority: TaskPriority = body.priority ?? 'medium'
+
+  const docRef = await addDoc(tasksCollection(userId), {
+    title: body.title,
+    status: TASK_STATUS_LABEL[status],
+    priority: TASK_PRIORITY_LABEL[priority],
+    assignedTo: body.assigneeId?.trim().length ? body.assigneeId : undefined,
+    createdAt: serverTimestamp(),
   })
 
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
-  }
-
-  const taskValue = (data as { task?: unknown } | null)?.task
-  if (!isTask(taskValue)) {
-    throw new Error('Invalid task response')
-  }
-
-  return taskValue
+  return docRef.id
 }
 
 export async function updateTask(
-  authToken: string,
+  userId: string,
   id: string,
   patch: {
     status?: TaskStatus
     priority?: TaskPriority
-    assigneeId?: string | undefined
+    assigneeId?: string | null
   },
-): Promise<Task> {
-  const response = await fetch(`/api/tasks/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    headers: {
-      'content-type': 'application/json',
-      ...getAuthHeaders(authToken),
-    },
-    body: JSON.stringify(patch),
-  })
+): Promise<void> {
+  const updates: Record<string, unknown> = {}
 
-  const data = (await response.json().catch(() => null)) as unknown
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Request failed (${response.status})`))
+  if (patch.status) {
+    updates.status = TASK_STATUS_LABEL[patch.status]
   }
 
-  const taskValue = (data as { task?: unknown } | null)?.task
-  if (!isTask(taskValue)) {
-    throw new Error('Invalid task response')
+  if (patch.priority) {
+    updates.priority = TASK_PRIORITY_LABEL[patch.priority]
   }
 
-  return taskValue
+  if (patch.assigneeId !== undefined) {
+    const trimmed = patch.assigneeId?.trim() ?? ''
+    updates.assignedTo = trimmed.length === 0 ? deleteField() : trimmed
+  }
+
+  if (Object.keys(updates).length === 0) return
+
+  await updateDoc(doc(tasksCollection(userId), id), updates)
 }
