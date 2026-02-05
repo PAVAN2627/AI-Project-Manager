@@ -9,8 +9,17 @@ export type IntentInterpretation = {
 
 function parseIntentFilterStatus(value: unknown): IntentFilterStatus | null {
   if (typeof value !== 'string') return null
-  const trimmed = value.trim()
-  if (trimmed === 'All' || trimmed === 'Blocked' || trimmed === 'Done') return trimmed
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'all') return 'All'
+
+  if (normalized === 'blocked' || normalized === 'stuck' || normalized === 'impeded') {
+    return 'Blocked'
+  }
+
+  if (normalized === 'done' || normalized === 'completed' || normalized === 'finished') {
+    return 'Done'
+  }
+
   return null
 }
 

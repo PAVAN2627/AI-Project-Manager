@@ -31,7 +31,8 @@ function toKanbanFilterStatus(status: IntentFilterStatus): Task['status'] | unde
       return 'done'
     default: {
       const exhaustive: never = status
-      return exhaustive
+      console.warn('Unhandled intent filterStatus value:', exhaustive)
+      return undefined
     }
   }
 }
@@ -48,7 +49,7 @@ export function DashboardPage() {
   const [isIntentBusy, setIsIntentBusy] = useState(false)
   const [intentError, setIntentError] = useState<string | null>(null)
   const [intent, setIntent] = useState<IntentInterpretation | null>(null)
-  const [hasGeneratedIntent, setHasGeneratedIntent] = useState(false)
+  const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
 
   const effectiveIntent = intent ?? DEFAULT_INTENT
 
@@ -183,7 +184,7 @@ export function DashboardPage() {
             } catch (error) {
               setIntentError(error instanceof Error ? error.message : 'Failed to interpret intent')
             } finally {
-              setHasGeneratedIntent(true)
+              setHasAttemptedIntent(true)
               setIsIntentBusy(false)
             }
           }}
@@ -227,7 +228,7 @@ export function DashboardPage() {
             />
           ) : null}
 
-          {hasGeneratedIntent ? (
+          {hasAttemptedIntent ? (
             <section className={styles.planPanel} aria-label='AI UI Decision Plan'>
               <header className={styles.planHeader}>
                 <h2 className={styles.planTitle}>AI UI Decision Plan</h2>
