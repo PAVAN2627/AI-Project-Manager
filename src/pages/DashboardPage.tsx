@@ -74,7 +74,12 @@ export function DashboardPage() {
   }, [activePlan, tasks])
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setTasks([])
+      setTaskError(null)
+      setIsLoadingTasks(false)
+      return
+    }
     let hasReceivedSnapshot = false
 
     setIsLoadingTasks(true)

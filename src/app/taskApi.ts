@@ -8,8 +8,10 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
 } from 'firebase/firestore'
+import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
 
 import { firestore } from '../firebase/firebase'
 import type { Task, TaskPriority, TaskStatus } from '../types/task'
@@ -20,7 +22,7 @@ type FirestoreTaskDoc = {
   status: string
   priority: string
   assignedTo?: string
-  createdAt?: unknown
+  createdAt?: Timestamp | null
 }
 
 function normalizeLabel(value: string): string {
@@ -58,23 +60,52 @@ function isFirestoreTaskDoc(value: unknown): value is FirestoreTaskDoc {
     if (maybe.assignedTo.trim() === '') return false
   }
 
-  void maybe.createdAt
+  if (maybe.createdAt !== undefined && maybe.createdAt !== null && !(maybe.createdAt instanceof Timestamp)) {
+    return false
+  }
 
   return true
 }
 
 function toTask(id: string, data: FirestoreTaskDoc): Task {
-  const status = STATUS_BY_LABEL.get(normalizeLabel(data.status)) ?? 'todo'
-  const priority = PRIORITY_BY_LABEL.get(normalizeLabel(data.priority)) ?? 'medium'
+  const normalizedStatus = normalizeLabel(data.status)
+  const normalizedPriority = normalizeLabel(data.priority)
+
+  const status = STATUS_BY_LABEL.get(normalizedStatus)
+  const priority = PRIORITY_BY_LABEL.get(normalizedPriority)
+
+  if (!status) {
+    console.warn(`[firestore] Unknown task status label (${id}): ${data.status}`)
+  }
+
+  if (!priority) {
+    console.warn(`[firestore] Unknown task priority label (${id}): ${data.priority}`)
+  }
+
   const assigneeId = data.assignedTo?.trim().length ? data.assignedTo.trim() : undefined
 
   return {
     id,
     title: data.title,
-    status,
-    priority,
+    status: status ?? 'todo',
+    priority: priority ?? 'medium',
     assigneeId,
   }
+}
+
+function mapDocsToTasks(docs: QueryDocumentSnapshot<DocumentData>[]): Task[] {
+  const tasks: Task[] = []
+
+  for (const docSnap of docs) {
+    const data = docSnap.data() as unknown
+    if (!isFirestoreTaskDoc(data)) {
+      console.warn(`[firestore] Invalid task document shape: ${docSnap.id}`)
+      continue
+    }
+    tasks.push(toTask(docSnap.id, data))
+  }
+
+  return tasks
 }
 
 function tasksCollection(userId: string) {
@@ -91,13 +122,7 @@ export function subscribeTasks(
   return onSnapshot(
     tasksQuery,
     (snapshot) => {
-      const tasks: Task[] = []
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data() as unknown
-        if (!isFirestoreTaskDoc(data)) continue
-        tasks.push(toTask(docSnap.id, data))
-      }
-      onChange(tasks)
+      onChange(mapDocsToTasks(snapshot.docs))
     },
     (error) => {
       onError?.(error)
@@ -108,15 +133,8 @@ export function subscribeTasks(
 export async function getTasksOnce(userId: string): Promise<Task[]> {
   const tasksQuery = query(tasksCollection(userId), orderBy('createdAt', 'desc'))
   const snapshot = await getDocs(tasksQuery)
-  const tasks: Task[] = []
 
-  for (const docSnap of snapshot.docs) {
-    const data = docSnap.data() as unknown
-    if (!isFirestoreTaskDoc(data)) continue
-    tasks.push(toTask(docSnap.id, data))
-  }
-
-  return tasks
+  return mapDocsToTasks(snapshot.docs)
 }
 
 export async function createTask(
@@ -127,25 +145,17 @@ export async function createTask(
     priority?: TaskPriority
     assigneeId?: string
   },
-): Promise<Task> {
+): Promise<void> {
   const status: TaskStatus = body.status ?? 'todo'
   const priority: TaskPriority = body.priority ?? 'medium'
 
-  const docRef = await addDoc(tasksCollection(userId), {
+  await addDoc(tasksCollection(userId), {
     title: body.title,
     status: TASK_STATUS_LABEL[status],
     priority: TASK_PRIORITY_LABEL[priority],
     assignedTo: body.assigneeId?.trim().length ? body.assigneeId : undefined,
     createdAt: serverTimestamp(),
   })
-
-  return {
-    id: docRef.id,
-    title: body.title,
-    status,
-    priority,
-    assigneeId: body.assigneeId?.trim().length ? body.assigneeId : undefined,
-  }
 }
 
 export async function updateTask(
@@ -168,10 +178,11 @@ export async function updateTask(
   }
 
   if (patch.assigneeId !== undefined) {
-    if (patch.assigneeId === null) {
+    const normalizedAssignee = patch.assigneeId === null ? null : patch.assigneeId.trim()
+    if (normalizedAssignee === null || normalizedAssignee.length === 0) {
       updates.assignedTo = deleteField()
-    } else if (patch.assigneeId.trim().length > 0) {
-      updates.assignedTo = patch.assigneeId
+    } else {
+      updates.assignedTo = normalizedAssignee
     }
   }
 
