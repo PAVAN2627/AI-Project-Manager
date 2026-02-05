@@ -96,6 +96,11 @@ function mapDocsToTasks(docs: QueryDocumentSnapshot<DocumentData>[]): Task[] {
       console.warn(`[firestore] Invalid task document shape: ${docSnap.id}`)
       continue
     }
+
+    if (data.createdAt === undefined) {
+      console.warn(`[firestore] Task is missing createdAt: ${docSnap.id}`)
+    }
+
     const task = toTask(docSnap.id, data)
     if (task) {
       tasks.push(task)

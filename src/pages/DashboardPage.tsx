@@ -92,7 +92,7 @@ export function DashboardPage() {
       },
       (error) => {
         console.warn('[firestore] Failed to subscribe to tasks', error)
-        setTaskError('Failed to load tasks from Firestore.')
+        setTaskError(error instanceof Error ? error.message : 'Failed to load tasks from Firestore.')
         setIsLoadingTasks(false)
       },
     )
