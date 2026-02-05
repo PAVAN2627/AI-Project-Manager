@@ -210,7 +210,7 @@ export function TeamCreation({ onCreateTeam, existingTeams = [], onDeleteTeam, o
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
                               {index === 0 && (
-                                <Crown className="w-3 h-3 text-accent" title="Team Lead" />
+                                <Crown className="w-3 h-3 text-accent" />
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
@@ -329,7 +329,7 @@ export function TeamCreation({ onCreateTeam, existingTeams = [], onDeleteTeam, o
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
                               {index === 0 && (
-                                <Crown className="w-3 h-3 text-accent" title="Team Lead" />
+                                <Crown className="w-3 h-3 text-accent" />
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
@@ -444,7 +444,7 @@ export function TeamCreation({ onCreateTeam, existingTeams = [], onDeleteTeam, o
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
                           {index === 0 && (
-                            <Crown className="w-3 h-3 text-accent" title="Team Lead" />
+                            <Crown className="w-3 h-3 text-accent" />
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1">

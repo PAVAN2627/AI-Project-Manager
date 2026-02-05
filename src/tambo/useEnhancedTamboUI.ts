@@ -18,11 +18,11 @@ export function useEnhancedTamboUI() {
     
     try {
       // Check if Tambo SDK is available
-      if (tambo && tambo.generateUI) {
+      if (tambo && 'generateUI' in tambo) {
         console.log('🚀 Using Tambo SDK for UI generation:', prompt)
         
         // Use Tambo's actual generative UI capabilities
-        const result = await tambo.generateUI({
+        const result = await (tambo as any).generateUI({
           prompt,
           context: {
             currentPlan: context?.activePlan,
@@ -40,11 +40,11 @@ export function useEnhancedTamboUI() {
         
         setGeneratedUI(result.component)
         return result
-      } else if (tambo && tambo.ai) {
+      } else if (tambo && 'ai' in tambo) {
         // Fallback to using Tambo's AI for plan generation
         console.log('🤖 Using Tambo AI for plan generation:', prompt)
         
-        const aiResponse = await tambo.ai.generateText({
+        const aiResponse = await (tambo as any).ai.generateText({
           prompt: `
             You are an AI interface designer. Given this user request: "${prompt}"
             Generate a JSON plan for a project management interface with the following structure:
@@ -72,7 +72,7 @@ export function useEnhancedTamboUI() {
         }
       } else {
         // Enhanced fallback UI generation
-        return generateFallbackUI(prompt, context)
+        return generateFallbackUI(prompt)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate UI'
@@ -80,15 +80,15 @@ export function useEnhancedTamboUI() {
       console.error('Tambo UI generation error:', err)
       
       // Return fallback on error
-      return generateFallbackUI(prompt, context)
+      return generateFallbackUI(prompt)
     } finally {
       setIsGenerating(false)
     }
   }, [tambo])
 
   const generateComponent = useCallback(async (componentType: string, props: any) => {
-    if (tambo && tambo.generateComponent) {
-      return tambo.generateComponent({
+    if (tambo && 'generateComponent' in tambo) {
+      return (tambo as any).generateComponent({
         type: componentType,
         props,
         style: 'modern-glass',
@@ -100,8 +100,8 @@ export function useEnhancedTamboUI() {
   }, [tambo])
 
   const enhanceExistingComponent = useCallback(async (component: React.ReactElement, enhancement: string) => {
-    if (tambo && tambo.enhanceComponent) {
-      return tambo.enhanceComponent(component, {
+    if (tambo && 'enhanceComponent' in tambo) {
+      return (tambo as any).enhanceComponent(component, {
         enhancement,
         preserveLogic: true,
         style: 'modern-glass'
@@ -125,7 +125,7 @@ export function useEnhancedTamboUI() {
 /**
  * Enhanced fallback UI generation with more sophisticated logic
  */
-function generateFallbackUI(prompt: string, context?: any): { plan: UIPlan; type: 'plan' } {
+function generateFallbackUI(prompt: string): { plan: UIPlan; type: 'plan' } {
   const lowerPrompt = prompt.toLowerCase()
   
   // Enhanced pattern matching with weights

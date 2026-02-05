@@ -25,9 +25,13 @@ export async function interpretIntentWithTambo(
     const interpretation = analyzePromptIntelligently(prompt)
     
     return {
-      ...interpretation,
+      showKanban: interpretation.showKanban ?? true,
+      filterStatus: interpretation.filterStatus ?? 'All',
+      showPrioritySelector: interpretation.showPrioritySelector ?? false,
+      showTeamAssignment: interpretation.showTeamAssignment ?? false,
       processingMethod: tamboInstance ? 'tambo_enhanced' : 'intelligent_local',
       confidence: 0.92,
+      reasoning: interpretation.reasoning ?? 'Intelligent analysis',
       timestamp: new Date().toISOString(),
       metadata: {
         tamboAvailable: !!tamboInstance,
@@ -40,16 +44,13 @@ export async function interpretIntentWithTambo(
     return {
       ...interpretIntentLocally(prompt),
       processingMethod: 'local_fallback',
-      reasoning: `Tambo AI failed: ${error.message}`,
-      originalError: error.message
+      reasoning: `Tambo AI failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
   }
 }
 
 // Intelligent prompt analysis (better than simple keyword matching)
 function analyzePromptIntelligently(prompt: string): Partial<IntentInterpretation> {
-  const lowerPrompt = prompt.toLowerCase()
-  
   // Advanced pattern recognition
   const patterns = {
     dashboard: /(\bdashboard\b|\boverview\b|\bsummary\b|\bcomprehensive\b|\bcomplete\b)/i,

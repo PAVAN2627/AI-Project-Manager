@@ -49,7 +49,7 @@ export function IntentHistory({ onApplyIntent, currentIntent }: IntentHistoryPro
     if (!user) return
     
     try {
-      await deleteIntentFromHistory(user.uid, id)
+      await deleteIntentFromHistory(id)
     } catch (error) {
       console.error('Failed to delete intent from history:', error)
       setError(error instanceof Error ? error.message : 'Failed to delete intent from history')
@@ -61,7 +61,7 @@ export function IntentHistory({ onApplyIntent, currentIntent }: IntentHistoryPro
     
     // For now, delete items one by one (would be better with cloud function)
     try {
-      await Promise.all(history.map(item => deleteIntentFromHistory(user.uid, item.id)))
+      await Promise.all(history.map(item => deleteIntentFromHistory(item.id)))
     } catch (error) {
       console.error('Failed to clear intent history:', error)
       setError(error instanceof Error ? error.message : 'Failed to clear intent history')
@@ -79,15 +79,6 @@ export function IntentHistory({ onApplyIntent, currentIntent }: IntentHistoryPro
     if (diffMins < 60) return `${diffMins}m ago`
     if (diffHours < 24) return `${diffHours}h ago`
     return `${diffDays}d ago`
-  }
-
-  const getIntentSummary = (intent: IntentInterpretation) => {
-    const features = []
-    if (intent.showKanban) features.push('Kanban')
-    if (intent.showPrioritySelector) features.push('Priority')
-    if (intent.showTeamAssignment) features.push('Team')
-    if (intent.filterStatus !== 'All') features.push(`Filter: ${intent.filterStatus}`)
-    return features.join(', ') || 'Basic view'
   }
 
   const isCurrentIntent = (intent: IntentInterpretation) => {

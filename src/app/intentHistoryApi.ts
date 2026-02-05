@@ -5,8 +5,7 @@ import {
   deleteDoc, 
   onSnapshot, 
   query, 
-  where, 
-  orderBy,
+  where,
   limit,
   Timestamp 
 } from 'firebase/firestore'
@@ -48,12 +47,12 @@ export async function addIntentToHistory(
   await addDoc(collection(db, INTENT_HISTORY_COLLECTION), historyDoc)
 }
 
-export async function deleteIntentFromHistory(userId: string, intentId: string): Promise<void> {
+export async function deleteIntentFromHistory(intentId: string): Promise<void> {
   const intentRef = doc(db, INTENT_HISTORY_COLLECTION, intentId)
   await deleteDoc(intentRef)
 }
 
-export async function clearIntentHistory(userId: string): Promise<void> {
+export async function clearIntentHistory(): Promise<void> {
   // Note: This would require a cloud function for efficient batch delete
   // For now, we'll handle this client-side with individual deletes
   console.warn('Clear history not implemented - would require cloud function for efficiency')

@@ -2,14 +2,11 @@ import { useMemo } from 'react'
 import { 
   BarChart3, 
   TrendingUp, 
-  Clock, 
   Users, 
   Target, 
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Zap,
-  Calendar,
   Award,
   Activity
 } from 'lucide-react'

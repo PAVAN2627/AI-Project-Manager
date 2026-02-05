@@ -144,7 +144,6 @@ async function generateFallbackUI(prompt: string, tasks: Task[], users: User[]):
         key: 'team',
         tasks: filteredTasks,
         teams: [], // Empty teams array as fallback
-        users,
         onUpdateTask: () => {}, // This would need to be passed from parent
       })
     )

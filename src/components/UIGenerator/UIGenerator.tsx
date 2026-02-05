@@ -3,12 +3,8 @@ import {
   Sparkles, 
   Wand2, 
   Layout, 
-  Palette, 
   Settings, 
-  Code, 
   Eye,
-  Download,
-  Share,
   Zap,
   Brain,
   Lightbulb
@@ -96,7 +92,7 @@ export function UIGenerator({ onGenerateInterface, isGenerating, currentIntent }
   const [customPrompt, setCustomPrompt] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(PRESET_PROMPTS[0].category)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { generateInterface, isTamboAvailable, error } = useEnhancedTamboUI()
+  const { isTamboAvailable, error } = useEnhancedTamboUI()
 
   const handleGenerateCustom = () => {
     if (customPrompt.trim()) {

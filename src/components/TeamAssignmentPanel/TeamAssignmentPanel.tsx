@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { User, UserCheck, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 
 import type { Task, TaskStatus } from '../../types/task'
 import { TASK_STATUS_LABEL, TASK_STATUS_ORDER, TASK_PRIORITY_LABEL } from '../../types/task'
@@ -25,8 +25,8 @@ export function TeamAssignmentPanel({ tasks, teams, onUpdateTask }: TeamAssignme
     return userMatch && statusMatch && teamMatch
   })
 
-  // Get all team members for display purposes
-  const allTeamMembers = teams.flatMap(team => team.members)
+  // Get all team members for display purposes (unused for now)
+  // const allTeamMembers = teams.flatMap(team => team.members)
 
   if (tasks.length === 0) {
     return (
@@ -181,7 +181,7 @@ export function TeamAssignmentPanel({ tasks, teams, onUpdateTask }: TeamAssignme
                       value={task.assigneeId || ''}
                       onChange={(e) => onUpdateTask({ 
                         ...task, 
-                        assigneeId: e.target.value || null 
+                        assigneeId: e.target.value || undefined 
                       })}
                       className="px-2 py-1 bg-black/20 border border-white/10 rounded text-xs focus:outline-none focus:border-primary"
                     >

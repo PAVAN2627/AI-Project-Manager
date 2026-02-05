@@ -13,32 +13,36 @@ export function useTamboIntentService() {
       
       // Submit the prompt to Tambo for UI generation
       const response = await submit({
-        content: `Analyze this project management request and determine which UI components to show: "${prompt}". 
-        
-        Available components:
-        - KanbanBoard: Shows tasks in columns (Todo, In Progress, Blocked, Done)
-        - PrioritySelector: Manages task priorities (low, medium, high, critical)
-        - TeamAssignmentPanel: Assigns tasks to team members
-        - NewTaskForm: Creates new tasks
-        - Analytics: Shows project metrics and progress
-        - IntentHistory: Shows previous AI interactions
-        
-        Respond with a JSON object indicating which components to display and any status filters.`,
-        streamResponse: false
+        additionalContext: {
+          prompt: `Analyze this project management request and determine which UI components to show: "${prompt}". 
+          
+          Available components:
+          - KanbanBoard: Shows tasks in columns (Todo, In Progress, Blocked, Done)
+          - PrioritySelector: Manages task priorities (low, medium, high, critical)
+          - TeamAssignmentPanel: Assigns tasks to team members
+          - NewTaskForm: Creates new tasks
+          - Analytics: Shows project metrics and progress
+          - IntentHistory: Shows previous AI interactions
+          
+          Respond with a JSON object indicating which components to display and any status filters.`
+        }
       })
 
       // Parse Tambo's response for component selection
       const interpretation = parseTamboResponse(response, prompt)
       
       return {
-        ...interpretation,
+        showKanban: interpretation.showKanban ?? true,
+        filterStatus: interpretation.filterStatus ?? 'All',
+        showPrioritySelector: interpretation.showPrioritySelector ?? false,
+        showTeamAssignment: interpretation.showTeamAssignment ?? false,
         processingMethod: 'tambo',
         confidence: 0.95,
         reasoning: 'Tambo AI generative UI analysis',
         timestamp: new Date().toISOString(),
         metadata: {
           tamboThreadId: thread?.id,
-          responseId: response?.id
+          responseId: response
         }
       }
     } catch (error) {
