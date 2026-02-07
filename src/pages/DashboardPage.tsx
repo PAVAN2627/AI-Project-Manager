@@ -11,7 +11,6 @@ import { TeamCreation } from '../components/TeamCreation/TeamCreation'
 import { Analytics } from '../components/Analytics/Analytics'
 import { IntentHistory } from '../components/IntentHistory/IntentHistory'
 import { UIGenerator } from '../components/UIGenerator/UIGenerator'
-import { mockUsers } from '../data/mockUsers'
 import type { IntentFilterStatus, IntentInterpretation } from '../app/intentApi'
 import { interpretIntentWithTambo } from '../app/tamboIntentService'
 import { createTask, subscribeTasks, updateTask } from '../app/taskApi'
@@ -74,6 +73,23 @@ export function DashboardPage() {
 
   const [activePlan, setActivePlan] = useState<UIPlan>(INITIAL_PLAN)
   const [hasAttemptedIntent, setHasAttemptedIntent] = useState(false)
+
+  // Extract unique users from teams
+  const usersFromTeams = useMemo(() => {
+    const userMap = new Map<string, { id: string; name: string; email: string }>()
+    teams.forEach(team => {
+      team.members.forEach(member => {
+        if (!userMap.has(member.id)) {
+          userMap.set(member.id, {
+            id: member.id,
+            name: member.name,
+            email: member.email
+          })
+        }
+      })
+    })
+    return Array.from(userMap.values())
+  }, [teams])
 
   const visibleTasks = useMemo(() => {
     if (!activePlan.kanban.enabled) return tasks
@@ -472,7 +488,7 @@ export function DashboardPage() {
                     <p className="text-muted-foreground">Loading your tasks...</p>
                   </div>
                 ) : (
-                  <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
+                  <KanbanBoard tasks={visibleTasks} users={usersFromTeams} onUpdateTask={handleUpdateTask} />
                 )}
               </div>
 
@@ -496,7 +512,7 @@ export function DashboardPage() {
                   onUpdateTeam={handleUpdateTeam}
                 />
               ) : activeSection === 'analytics' ? (
-                <Analytics tasks={tasks} users={mockUsers} teams={teams} />
+                <Analytics tasks={tasks} users={usersFromTeams} teams={teams} />
               ) : activeSection === 'intent-history' ? (
                 <IntentHistory onApplyIntent={handleApplyIntent} currentIntent={intent} />
               ) : activeSection === 'ui-generator' ? (
@@ -511,7 +527,7 @@ export function DashboardPage() {
                   <p className="text-muted-foreground">Loading your tasks...</p>
                 </div>
               ) : activePlan.kanban.enabled ? (
-                <KanbanBoard tasks={visibleTasks} users={mockUsers} onUpdateTask={handleUpdateTask} />
+                <KanbanBoard tasks={visibleTasks} users={usersFromTeams} onUpdateTask={handleUpdateTask} />
               ) : hasAttemptedIntent ? (
                 <div className="card-glass p-12 text-center">
                   <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -566,7 +582,7 @@ export function DashboardPage() {
           )}
 
           {/* AI UI Decision Plan - Show always when intent generated */}
-          {hasAttemptedIntent && (
+          {hasAttemptedIntent && activeSection === 'ai-interface' && (
             <div className="mt-6">
               <div className="card-glass overflow-hidden animate-slide-in-up">
                 <button
